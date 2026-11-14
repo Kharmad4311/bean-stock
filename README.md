@@ -33,8 +33,10 @@ Les raisons de ces choix, leurs compromis et leurs limites sont détaillés dans
 ```
 src/             Code source (Domain, Application, Infrastructure, Api, Worker)
 tests/           Tests unitaires et d'intégration
-documentation/   Documentation détaillée (architecture, concurrence, contrat d'erreurs HTTP…)
-pipelines/       Pipelines CI en YAML
+api/             Collection Bruno pour appeler l'API
+documentation/   Documentation détaillée (à venir)
+pipelines/       Pipelines CI en YAML (à venir)
+compose.yaml     Dépendances locales (SQL Server)
 DECISIONS.md     Décisions d'architecture et compromis
 AGENTS.md        Instructions fournies aux agents IA utilisés sur le projet
 ```
@@ -42,11 +44,16 @@ AGENTS.md        Instructions fournies aux agents IA utilisés sur le projet
 ## Prérequis
 
 - [SDK .NET 10](https://dotnet.microsoft.com/download/dotnet/10.0) (version fixée par `global.json`)
-- [Docker](https://www.docker.com/) pour SQL Server en local et pour les tests d'intégration
+- **SQL Server** : au choix, le conteneur fourni (Docker) ou une instance installée localement (Developer, Express…)
+- [Docker](https://www.docker.com/) pour les tests d'intégration (Testcontainers) et, si on le souhaite, pour SQL Server en local
+- Windows 11 : **Smart App Control désactivé** (Sécurité Windows → Contrôle des applications et du navigateur). Il bloque les assemblies non signées produites par chaque build, y compris lorsqu'elles sont chargées par `dotnet ef` ; aucune exclusion par dossier n'existe.
+- [Bruno](https://www.usebruno.com/) (facultatif) pour appeler l'API avec la collection fournie
 
 ## Démarrage local
 
 ### 1. Démarrer SQL Server
+
+**Option A — conteneur Docker fourni**
 
 ```bash
 cp .env.example .env        # puis renseigner MSSQL_SA_PASSWORD dans .env
@@ -55,6 +62,10 @@ docker compose ps           # attendre l'état "healthy"
 ```
 
 Si un SQL Server local occupe déjà le port 1433, changer `MSSQL_HOST_PORT` dans `.env` (par exemple `14333`) et l'utiliser dans la chaîne de connexion ci-dessous.
+
+**Option B — instance SQL Server installée localement**
+
+Aucune étape préalable : il suffit que le compte utilisé ait le droit de créer une base, les migrations créant `BeanStock` au premier lancement.
 
 ### 2. Configurer la chaîne de connexion
 
@@ -65,6 +76,8 @@ dotnet user-secrets set "ConnectionStrings:BeanStock" \
   "Server=localhost,1433;Database=BeanStock;User Id=sa;Password=<MSSQL_SA_PASSWORD>;TrustServerCertificate=True" \
   --project src/BeanStock.Api
 ```
+
+Avec une instance locale et l'authentification Windows, la chaîne devient par exemple `Server=localhost;Database=BeanStock;Trusted_Connection=True;TrustServerCertificate=True` (ou `Server=.\SQLEXPRESS;…` pour une instance nommée).
 
 Sous Visual Studio : clic droit sur `BeanStock.Api` → *Gérer les secrets utilisateur*. En dehors du poste de développement, utiliser la variable d'environnement `ConnectionStrings__BeanStock`.
 
@@ -102,6 +115,8 @@ dotnet test
 ## Synchronisation manuelle du catalogue *(à venir)*
 
 ## Utilisation de l'API
+
+La collection [Bruno](https://www.usebruno.com/) du dossier `api/` contient les requêtes principales. Ouvrir le dossier dans Bruno (*Open Collection*) puis sélectionner l'environnement **Local** (`BaseUrl` = `http://localhost:5080`). D'autres environnements (recette, production…) pourront y être ajoutés sous `api/environments/`.
 
 ### Catalogue
 
