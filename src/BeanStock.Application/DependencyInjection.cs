@@ -1,3 +1,4 @@
+using BeanStock.Application.Catalog.Synchronization;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -17,6 +18,17 @@ public static class DependencyInjection
     {
         services.AddValidatorsFromAssembly(typeof(ApplicationAssembly).Assembly, includeInternalTypes: true);
         services.TryAddSingleton(TimeProvider.System);
+
+        services.AddOptions<CatalogSynchronizationOptions>()
+            .BindConfiguration(CatalogSynchronizationOptions.SectionName)
+            .Validate(
+                options => options.BatchSize is > 0 and <= CatalogSynchronizationOptions.MaxBatchSize,
+                $"CatalogSync:BatchSize must be between 1 and {CatalogSynchronizationOptions.MaxBatchSize}.")
+            .Validate(
+                options => options.MinimumCatalogRatio is >= 0 and <= 1,
+                "CatalogSync:MinimumCatalogRatio must be between 0 and 1.")
+            .ValidateOnStart();
+
         return services;
     }
 }

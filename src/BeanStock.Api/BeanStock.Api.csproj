@@ -21,6 +21,8 @@
   <ItemGroup>
     <ProjectReference Include="..\BeanStock.Application\BeanStock.Application.csproj" />
     <ProjectReference Include="..\BeanStock.Infrastructure.Persistence\BeanStock.Infrastructure.Persistence.csproj" />
+    <!-- Composition uniquement : le handler de synchronisation (déclenchement manuel) a besoin du fournisseur. -->
+    <ProjectReference Include="..\BeanStock.Infrastructure.DummyJson\BeanStock.Infrastructure.DummyJson.csproj" />
   </ItemGroup>
 
 </Project>

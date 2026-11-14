@@ -5,6 +5,7 @@
     <File Path="Directory.Packages.props" />
     <File Path="global.json" />
     <File Path="nuget.config" />
+    <File Path="coverage.config" />
   </Folder>
   <Folder Name="/items/docker/">
     <File Path=".env.example" />
@@ -14,6 +15,7 @@
     <File Path="AGENTS.md" />
     <File Path="DECISIONS.md" />
     <File Path="README.md" />
+    <File Path="documentation/synchronisation.md" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/BeanStock.Api/BeanStock.Api.csproj" />
@@ -33,6 +35,8 @@
   <Folder Name="/tests/">
     <Project Path="tests/BeanStock.Application.UnitTests/BeanStock.Application.UnitTests.csproj" />
     <Project Path="tests/BeanStock.Domain.UnitTests/BeanStock.Domain.UnitTests.csproj" />
+    <Project Path="tests/BeanStock.Infrastructure.DummyJson.UnitTests/BeanStock.Infrastructure.DummyJson.UnitTests.csproj" />
     <Project Path="tests/BeanStock.IntegrationTests/BeanStock.IntegrationTests.csproj" />
+    <Project Path="tests/BeanStock.Worker.UnitTests/BeanStock.Worker.UnitTests.csproj" />
   </Folder>
 </Solution>

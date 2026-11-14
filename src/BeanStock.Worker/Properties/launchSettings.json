@@ -4,8 +4,20 @@
     "BeanStock.Worker": {
       "commandName": "Project",
       "dotnetRunMessages": true,
+      "workingDirectory": "$(ProjectDir)",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
+      }
+    },
+    "BeanStock.Worker (synchro rapide)": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "workingDirectory": "$(ProjectDir)",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development",
+        "CatalogSync__Schedule__Interval": "00:02:00",
+        "CatalogSync__Schedule__CheckInterval": "00:00:15",
+        "CatalogSync__Schedule__RetryDelay": "00:00:30"
       }
     }
   }

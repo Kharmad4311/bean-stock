@@ -9,4 +9,8 @@
     <ProjectReference Include="..\BeanStock.Application.Abstractions\BeanStock.Application.Abstractions.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="BeanStock.Infrastructure.DummyJson.UnitTests" />
+  </ItemGroup>
+
 </Project>

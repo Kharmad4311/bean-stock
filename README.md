@@ -8,7 +8,7 @@ BeanStock est le nom de marque du service. Le catalogue provient de [DummyJSON](
 
 ## Statut
 
-🚧 **En cours de développement.** La solution démarre en local : base SQL Server, API (santé, catalogue paginé) et Worker. Le panier et la synchronisation du catalogue arrivent dans les prochaines itérations. Les sections marquées *(à venir)* seront complétées au fur et à mesure.
+🚧 **En cours de développement.** La solution démarre en local : base SQL Server, API (santé, catalogue paginé, synchronisation manuelle) et Worker (synchronisation automatique). Le panier arrive dans la prochaine itération. Les sections marquées *(à venir)* seront complétées au fur et à mesure.
 
 ## Fonctionnalités
 
@@ -34,7 +34,7 @@ Les raisons de ces choix, leurs compromis et leurs limites sont détaillés dans
 src/             Code source (Domain, Application, Infrastructure, Api, Worker)
 tests/           Tests unitaires et d'intégration
 api/             Collection Bruno pour appeler l'API
-documentation/   Documentation détaillée (à venir)
+documentation/   Documentation détaillée (synchronisation du catalogue…)
 pipelines/       Pipelines CI en YAML (à venir)
 compose.yaml     Dépendances locales (SQL Server)
 DECISIONS.md     Décisions d'architecture et compromis
@@ -109,10 +109,102 @@ dotnet ef migrations add <Nom> --project src/BeanStock.Infrastructure.Persistenc
 dotnet test
 ```
 
-- `BeanStock.Domain.UnitTests` et `BeanStock.Application.UnitTests` : sans dépendance externe.
-- `BeanStock.IntegrationTests` : démarrent un SQL Server jetable via Testcontainers ; **Docker doit être lancé**.
+| Projet | Contenu | Dépendance externe |
+|---|---|---|
+| `BeanStock.Domain.UnitTests` | Règles du panier et du produit | — |
+| `BeanStock.Application.UnitTests` | Cas d'usage (synchronisation…), validations | — |
+| `BeanStock.Infrastructure.DummyJson.UnitTests` | Client DummyJSON, avec un faux serveur HTTP | — |
+| `BeanStock.Worker.UnitTests` | Planificateur de synchronisation, en temps simulé | — |
+| `BeanStock.IntegrationTests` | API + SQL Server réel : concurrence, rollback, verrou distribué | **Docker** (Testcontainers) |
 
-## Synchronisation manuelle du catalogue *(à venir)*
+Aucun test n'appelle le vrai DummyJSON. Pour lancer uniquement les tests sans Docker : `dotnet test --filter "FullyQualifiedName!~IntegrationTests"`.
+
+### Couverture de code
+
+```powershell
+dotnet tool restore
+Remove-Item TestResults/coverage -Recurse -ErrorAction Ignore   # bash : rm -rf TestResults/coverage
+dotnet test --coverage --coverage-output-format cobertura --coverage-settings coverage.config --results-directory TestResults/coverage
+dotnet reportgenerator -reports:"TestResults/coverage/*.cobertura.xml" -targetdir:coverage-report -reporttypes:"Html;TextSummary" -filefilters:"-*.g.cs"
+```
+
+Le rapport HTML est dans `coverage-report/index.html` et le résumé dans `coverage-report/Summary.txt`. Chaque projet de test produit son propre fichier (nom unique) dans `TestResults/coverage/`, et ReportGenerator les fusionne. On vide le dossier avant chaque mesure pour ne pas mélanger les exécutions. Les assemblies de test, les migrations et le code généré sont exclus de la mesure (`coverage.config`).
+
+### Moteur de tests
+
+Les projets xUnit v3 tournent sur **Microsoft Testing Platform** : `global.json` y bascule `dotnet test` (obligatoire avec le SDK .NET 10). Conséquences :
+
+- un projet de test est un exécutable : `dotnet run --project tests/BeanStock.IntegrationTests` lance ses tests, sans passer par `dotnet test` ;
+- les options sont celles de la plateforme (`--coverage`, `--report-trx`…) et non plus celles de VSTest (`--collect`, `--logger`) ;
+- Visual Studio (Explorateur de tests) fonctionne sans changement.
+
+## Synchronisation du catalogue
+
+Le catalogue DummyJSON est copié dans la base locale par **un seul cas d'usage**, déclenché de deux façons. Le fonctionnement complet (verrou multi-instance, lots, scénarios d'échec) est décrit dans [`documentation/synchronisation.md`](documentation/synchronisation.md).
+
+### Déclenchement manuel
+
+```bash
+curl -X POST http://localhost:5080/admin/catalog/sync
+```
+
+L'appel attend la fin de la synchronisation, quelques secondes, puis renvoie le rapport :
+
+```json
+{
+  "runId": "019a8c5e-…",
+  "trigger": "Manual",
+  "startedAt": "2026-11-14T14:02:11.513+00:00",
+  "completedAt": "2026-11-14T14:02:13.870+00:00",
+  "providerProducts": 194,
+  "added": 194,
+  "updated": 0,
+  "reactivated": 0,
+  "deactivated": 0,
+  "unchanged": 0,
+  "skipped": 0
+}
+```
+
+| Statut | Signification | Catalogue |
+|---|---|---|
+| `200` | Synchronisation terminée | À jour |
+| `409` `CatalogSync.AlreadyRunning` | Une synchronisation est déjà en cours, sur n'importe quelle instance | Inchangé |
+| `409` `CatalogSync.LockLost` | Le verrou exclusif a été perdu en cours de route (coupure de connexion) : rien n'est validé | Inchangé |
+| `502` `CatalogSync.ProviderUnavailable` | DummyJSON injoignable ou réponse incohérente | Inchangé |
+| `502` `CatalogSync.SuspiciousCatalog` | Catalogue reçu vide ou anormalement court (garde-fou) | Inchangé |
+
+Également disponible dans Bruno (`Admin / Synchronize Catalog`) et Scalar.
+
+### Synchronisation automatique (Worker)
+
+Le Worker synchronise **une fois par jour**. Le planning est commun à toutes les instances : la synchronisation a lieu dès que la dernière réussite date de plus de `Interval`. Un Worker qui démarre sur une base vide synchronise donc immédiatement, et plusieurs Workers ne synchronisent pas plusieurs fois.
+
+Section `CatalogSync:Schedule` (format `TimeSpan` : `"1.00:00:00"` = 1 jour, `"00:02:00"` = 2 minutes) :
+
+| Clé | Défaut | Rôle |
+|---|---|---|
+| `Enabled` | `true` | Active la synchronisation automatique |
+| `Interval` | `1.00:00:00` | Délai minimal entre deux synchronisations réussies |
+| `CheckInterval` | `00:01:00` | Fréquence des vérifications de chaque Worker |
+| `RetryDelay` | `00:15:00` | Attente avant une nouvelle tentative après un échec |
+
+**Raccourcir le délai pour un test manuel :**
+
+- choisir le profil de lancement **`BeanStock.Worker (synchro rapide)`** dans Visual Studio (`Interval` = 2 min, vérification toutes les 15 s) ;
+- ou modifier `src/BeanStock.Worker/appsettings.Development.json` : la nouvelle valeur s'applique **sans redémarrage**, à la vérification suivante ;
+- ou définir la variable d'environnement `CatalogSync__Schedule__Interval=00:05:00`.
+
+Une variable d'environnement, y compris celles du profil « synchro rapide », l'emporte sur le fichier JSON.
+
+### Historique
+
+Chaque exécution est tracée dans la table `CatalogSyncRuns` (déclencheur, statut, compteurs, cause d'échec) :
+
+```sql
+SELECT TOP (10) StartedAt, [Trigger], Status, AddedCount, UpdatedCount, DeactivatedCount, FailureReason
+FROM CatalogSyncRuns ORDER BY StartedAt DESC;
+```
 
 ## Utilisation de l'API
 
@@ -124,7 +216,7 @@ La collection [Bruno](https://www.usebruno.com/) du dossier `api/` contient les 
 curl "http://localhost:5080/products?page=1&pageSize=20"
 ```
 
-Retourne les produits **actifs** du catalogue local, triés par identifiant fournisseur : `items`, `page`, `pageSize`, `totalCount`, `totalPages`. `pageSize` est limité à 100 ; une valeur invalide renvoie un `400` au format ProblemDetails.
+Retourne les produits **actifs** du catalogue local, triés par identifiant fournisseur : `items`, `page`, `pageSize`, `totalCount`, `totalPages`. Chaque produit indique `lastUpdatedAt`, la date de sa dernière modification locale (création, changement de valeur, réactivation). Les produits retirés par le fournisseur n'apparaissent plus, mais restent lisibles dans les paniers. `pageSize` est limité à 100 ; une valeur invalide renvoie un `400` au format ProblemDetails.
 
 ### Panier *(à venir)*
 

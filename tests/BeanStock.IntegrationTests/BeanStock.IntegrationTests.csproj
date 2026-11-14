@@ -3,6 +3,7 @@
   <!-- Tests sur un vrai SQL Server (Testcontainers) : Docker doit être démarré. -->
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
     <PackageReference Include="Testcontainers.MsSql" />
   </ItemGroup>
 
