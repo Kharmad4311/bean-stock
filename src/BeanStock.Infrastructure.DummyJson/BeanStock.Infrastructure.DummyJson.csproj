@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Client HTTP du fournisseur de catalogue DummyJSON. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BeanStock.Application.Abstractions\BeanStock.Application.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

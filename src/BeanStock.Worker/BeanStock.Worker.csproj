@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <!-- Partagé avec l'API : une seule configuration de secrets locaux pour les deux hôtes. -->
+    <UserSecretsId>beanstock-local-dev</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mediator.SourceGenerator">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BeanStock.Application\BeanStock.Application.csproj" />
+    <ProjectReference Include="..\BeanStock.Infrastructure.DummyJson\BeanStock.Infrastructure.DummyJson.csproj" />
+    <ProjectReference Include="..\BeanStock.Infrastructure.Persistence\BeanStock.Infrastructure.Persistence.csproj" />
+  </ItemGroup>
+
+</Project>

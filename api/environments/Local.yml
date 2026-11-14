@@ -1,0 +1,6 @@
+name: Local
+variables:
+  - secret: false
+    name: BaseUrl
+    value: http://localhost:5080
+    description: "URL de l'API lancée en local (profil Start API)"

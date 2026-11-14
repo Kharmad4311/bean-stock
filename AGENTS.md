@@ -7,7 +7,8 @@ API e-commerce de démonstration (test technique) : catalogue synchronisé depui
 ## Stack
 
 - C# / **.NET 10**, **SQL Server**, **EF Core**
-- Clean Architecture : `Domain` → `Application` → `Infrastructure` ; points d'entrée `Api` (Minimal APIs) et `Worker`
+- Clean Architecture, 7 projets : `Domain` → `Application.Abstractions` (ports) → `Application` (cas d'usage) ; `Infrastructure.Persistence` et `Infrastructure.DummyJson` ne dépendent que des ports ; points d'entrée `Api` (Minimal APIs) et `Worker`
+- `Mediator.SourceGenerator` uniquement dans les hôtes (`Api`, `Worker`) ; les handlers appelés par un hôte sont `public`
 - `Mediator` (martinothamar, source-generated) — **ne pas introduire MediatR**
 - `Ardalis.Specification` pour les **lectures uniquement**
 - `ErrorOr` pour les erreurs métier ; `FluentValidation` pour les entrées
@@ -44,6 +45,10 @@ Tout changement touchant ces points doit être accompagné d'un test d'intégrat
 
 - Tenir la documentation à jour **dans le même changement** que le code : `README.md`, `DECISIONS.md` (2 pages max), `documentation/`.
 - Documenter ce qui aide à comprendre ou à exploiter — pas de paraphrase du code.
+- Tout endpoint ajouté ou modifié est reflété dans la collection Bruno (`api/`, format YAML OpenCollection), dans le même changement.
+- Les environnements Bruno (`api/environments/`) ne contiennent que des valeurs non sensibles (URL locales…) ; jamais de jeton ni de mot de passe.
+- Le démarrage local doit rester possible avec le conteneur SQL Server fourni **ou** une instance SQL Server installée ; Docker n'est obligatoire que pour les tests d'intégration (Testcontainers).
+- Les fichiers de configuration et de documentation à la racine sont référencés dans le dossier de solution `/items` du `.slnx` (sous-dossiers `docker`, `documentation`).
 
 ## Langue
 

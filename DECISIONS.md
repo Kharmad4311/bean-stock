@@ -9,17 +9,19 @@ BeanStock est la **marque** du service ; le catalogue est celui de DummyJSON, sy
 
 ## 2. Architecture
 
-**Clean Architecture**, cinq projets :
+**Clean Architecture**, sept projets (`src/`, préfixe `BeanStock.`) :
 
 | Projet | Rôle | Dépend de |
 |---|---|---|
 | `Domain` | Agrégat `Cart` / `CartLine`, `Product`, règles métier, erreurs métier | — |
-| `Application` | Commandes / requêtes, handlers, specifications, behaviors, abstractions (`IDistributedLock`, `ICatalogProvider`…) | Domain |
-| `Infrastructure` | EF Core / SQL Server, repositories, client DummyJSON, verrou `sp_getapplock` | Application |
-| `Api` | Minimal APIs, identification utilisateur, ProblemDetails | Application, Infrastructure (composition) |
-| `Worker` | Déclencheurs de synchronisation | Application, Infrastructure (composition) |
+| `Application.Abstractions` | Ports implémentés par l'infrastructure (`IReadRepository<T>`, `ICatalogProvider`…) | Domain |
+| `Application` | Commandes / requêtes, handlers, specifications, validators, behaviors | Application.Abstractions |
+| `Infrastructure.Persistence` | EF Core / SQL Server, migrations, repositories, verrou `sp_getapplock` | Application.Abstractions |
+| `Infrastructure.DummyJson` | Client HTTP du fournisseur (pagination, résilience) | Application.Abstractions |
+| `Api` | Minimal APIs, identification utilisateur, ProblemDetails | Application, Persistence (composition) |
+| `Worker` | Déclencheurs de synchronisation | Application, Persistence, DummyJson (composition) |
 
-*Pourquoi :* les règles métier sont testables sans base ni HTTP, et l'infrastructure (base, fournisseur, ordonnanceur) est remplaçable. *Coût :* plus de projets et d'indirections qu'une API monolithique ; accepté car le produit est destiné à évoluer.
+*Pourquoi :* les règles métier sont testables sans base ni HTTP, et l'infrastructure (base, fournisseur, ordonnanceur) est remplaçable. Séparer les ports des cas d'usage permet à l'infrastructure de ne dépendre que des contrats ; découper l'infrastructure par technologie garde chaque projet petit et limite les dépendances de chaque hôte (l'API n'embarque pas le client DummyJSON). *Coût :* plus de projets et d'indirections qu'une API monolithique ; accepté car le produit est destiné à évoluer.
 
 ## 3. CQRS léger avec Mediator
 
