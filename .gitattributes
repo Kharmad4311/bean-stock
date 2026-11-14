@@ -1,0 +1,22 @@
+# .gitattributes : normalisation des fins de ligne.
+# Développement sous Windows, exécution sous Linux : tout le texte est stocké et extrait en LF.
+# Un script .sh en CRLF échoue dans un conteneur Linux.
+* text=auto eol=lf
+
+# Scripts Windows : CRLF obligatoire
+*.cmd   text eol=crlf
+*.bat   text eol=crlf
+*.ps1   text eol=crlf
+
+# Binaires : jamais de conversion ni de diff texte
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.woff  binary
+*.woff2 binary
+*.dll   binary
+*.exe   binary
+*.pdf   binary
