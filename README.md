@@ -34,7 +34,7 @@ Les raisons de ces choix, leurs compromis et leurs limites sont détaillés dans
 src/             Code source (Domain, Application, Infrastructure, Api, Worker)
 tests/           Tests unitaires et d'intégration
 api/             Collection Bruno pour appeler l'API
-documentation/   Documentation détaillée (synchronisation du catalogue…)
+documentation/   Documentation détaillée (synchronisation, verrou distribué, tests manuels…)
 pipelines/       Pipelines CI en YAML (à venir)
 compose.yaml     Dépendances locales (SQL Server)
 DECISIONS.md     Décisions d'architecture et compromis
@@ -140,7 +140,7 @@ Les projets xUnit v3 tournent sur **Microsoft Testing Platform** : `global.json`
 
 ## Synchronisation du catalogue
 
-Le catalogue DummyJSON est copié dans la base locale par **un seul cas d'usage**, déclenché de deux façons. Le fonctionnement complet (verrou multi-instance, lots, scénarios d'échec) est décrit dans [`documentation/synchronisation.md`](documentation/synchronisation.md).
+Le catalogue DummyJSON est copié dans la base locale par **un seul cas d'usage**, déclenché de deux façons. Le fonctionnement complet (verrou multi-instance, lots, scénarios d'échec) est décrit dans [`documentation/synchronisation.md`](documentation/synchronisation.md), le verrou distribué dans [`documentation/verrou-distribue.md`](documentation/verrou-distribue.md), et un mode opératoire de test manuel dans [`documentation/tests-manuels-synchronisation.md`](documentation/tests-manuels-synchronisation.md).
 
 ### Déclenchement manuel
 

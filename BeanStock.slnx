@@ -16,6 +16,8 @@
     <File Path="DECISIONS.md" />
     <File Path="README.md" />
     <File Path="documentation/synchronisation.md" />
+    <File Path="documentation/tests-manuels-synchronisation.md" />
+    <File Path="documentation/verrou-distribue.md" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/BeanStock.Api/BeanStock.Api.csproj" />

@@ -2,6 +2,8 @@
 
 Ce document décrit la synchronisation du catalogue DummyJSON vers la base locale : son fonctionnement, les garanties qu'elle apporte en multi-instance, sa configuration et ses limites. La version courte se trouve dans [`DECISIONS.md`](../DECISIONS.md) §6.
 
+Voir aussi : [`verrou-distribue.md`](verrou-distribue.md) (fiche détaillée sur `sp_getapplock`, avec sources) et [`tests-manuels-synchronisation.md`](tests-manuels-synchronisation.md) (mode opératoire de test manuel).
+
 ## 1. En bref
 
 | Exigence de l'énoncé | Réponse |
@@ -88,6 +90,8 @@ Si une étape échoue avant le `COMMIT`, la transaction est annulée, le run pas
 ## 4. Exclusivité entre instances : le verrou distribué
 
 ### Mécanisme
+
+Fiche complète, limites, questions d'entretien et sources : [`verrou-distribue.md`](verrou-distribue.md).
 
 `SqlServerDistributedLock` (dans `Infrastructure.Persistence`) s'appuie sur `sp_getapplock`, le verrou applicatif natif de SQL Server :
 
@@ -336,7 +340,7 @@ Toutes les sections sont validées au démarrage (`ValidateOnStart`).
 | Règles du produit (mise à jour, inchangé, réactivation, arrondi du prix, désactivation) | `Domain.UnitTests` : `ProductSynchronizationTests`, `CatalogSyncRunTests` |
 | Ajout, mise à jour, désactivation, produits ignorés, lots, garde-fou, `AlreadyRunning`, `NotDue`, verrou perdu (pas de commit), échec fournisseur, erreur inattendue, libération du verrou | `Application.UnitTests` : `SynchronizeCatalogCommandHandlerTests`, `ProviderCatalogSnapshotTests`, `CatalogSyncGuardTests`, `SynchronizeCatalogCommandValidatorTests` |
 | Pagination DummyJSON, réponses incohérentes, erreurs HTTP, JSON invalide, annulation | `Infrastructure.DummyJson.UnitTests` : `DummyJsonCatalogProviderTests` |
-| Vérification immédiate, rythme `CheckInterval`, `RetryDelay`, désactivation, rechargement à chaud, configuration invalide ignorée, validation des options | `Worker.UnitTests` : `CatalogSyncSchedulerTests`, `CatalogSyncScheduleOptionsTests` (temps simulé avec `FakeTimeProvider`) |
+| Vérification immédiate, rythme `CheckInterval`, `RetryDelay`, désactivation, rechargement à chaud, configuration invalide ignorée, validation des options | `Worker.UnitTests` : `CatalogSyncSchedulerTests`, `CatalogSyncScheduleOptionsTests` (temps simulé avec `FakeTimeProvider`), `CatalogSyncJobTests` (interprétation du résultat du cas d'usage) |
 | Sur un vrai SQL Server : pas de doublon, rollback en cours de lots puis reprise, `409` pendant une exécution, exclusivité du verrou entre connexions, détection d'un verrou perdu (session tuée), une seule exécution planifiée par intervalle, `502`, lectures non bloquées | `IntegrationTests` : `CatalogSynchronizationTests` |
 
 Les tests d'intégration remplacent DummyJSON par un fournisseur simulé (`FakeCatalogProvider`) : **aucun test n'appelle le vrai service**. Ils utilisent des lots de 2 produits, pour que chaque scénario passe par plusieurs lots, et injectent une panne d'écriture avec un intercepteur EF Core (`FailingSaveChangesInterceptor`).
