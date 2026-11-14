@@ -1,0 +1,99 @@
+# .editorconfig : conventions de code partagées par Rider, Visual Studio, VS Code et le compilateur.
+# Avec EnforceCodeStyleInBuild (Directory.Build.props), les règles en "warning" sont vérifiées au build.
+root = true
+
+# ─── Tous les fichiers ──────────────────────────────────────────────
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# Fichiers de config et MSBuild : indentation sur 2 espaces
+[*.{json,yml,yaml,props,targets,csproj,slnx,xml,config}]
+indent_size = 2
+
+# Markdown : les espaces de fin de ligne ont un sens (retour à la ligne)
+[*.md]
+trim_trailing_whitespace = false
+
+# ─── C# ─────────────────────────────────────────────────────────────
+[*.cs]
+
+# Namespaces : un fichier = un namespace "file-scoped", sans niveau d'indentation inutile
+csharp_style_namespace_declarations = file_scoped:warning
+dotnet_diagnostic.IDE0161.severity = warning
+
+# Usings : en dehors du namespace, System en premier, pas de using inutile
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+dotnet_diagnostic.IDE0005.severity = warning
+
+# Constructeurs primaires préférés (cohérent avec nos handlers)
+csharp_style_prefer_primary_constructors = true:suggestion
+
+# var : quand le type est évident à la lecture
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+
+# Accolades obligatoires, même sur une ligne
+csharp_prefer_braces = true:warning
+
+# Expressions modernes
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+dotnet_style_prefer_collection_expression = when_types_loosely_match:suggestion
+
+# Modificateurs d'accès toujours explicites
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+
+# ─── Nommage ────────────────────────────────────────────────────────
+
+# Interfaces : préfixe I
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_style.prefix_i.required_prefix = I
+dotnet_naming_style.prefix_i.capitalization = pascal_case
+dotnet_naming_rule.interfaces_prefix_i.symbols = interfaces
+dotnet_naming_rule.interfaces_prefix_i.style = prefix_i
+dotnet_naming_rule.interfaces_prefix_i.severity = warning
+
+# Constantes : PascalCase
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.required_modifiers = const
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+dotnet_naming_rule.constants_pascal_case.symbols = constants
+dotnet_naming_rule.constants_pascal_case.style = pascal_case
+dotnet_naming_rule.constants_pascal_case.severity = warning
+
+# Champs privés : _camelCase
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel.required_prefix = _
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+dotnet_naming_rule.private_fields_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel
+dotnet_naming_rule.private_fields_underscore.severity = warning
+
+# ─── Ajustements des analyseurs ─────────────────────────────────────
+
+# CA2007 (ConfigureAwait) : inutile dans une application ASP.NET Core / Generic Host,
+# il n'y a pas de SynchronizationContext à éviter.
+dotnet_diagnostic.CA2007.severity = none
+
+# CA1848 (LoggerMessage) : bonne pratique de performance, mais pas bloquante pour démarrer
+dotnet_diagnostic.CA1848.severity = suggestion
+
+# ─── Code généré ────────────────────────────────────────────────────
+
+# Migrations EF Core : générées, on ne les analyse pas
+[**/Migrations/*.cs]
+generated_code = true
+
+# ─── Custom ─────────────────────────────────────────────────────────
+
+# CA1716: Les identificateurs ne doivent pas correspondre à des mots clés
+dotnet_diagnostic.CA1716.severity = none
