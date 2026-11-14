@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Ports de l'application : contrats implémentés par l'infrastructure. -->
+  <ItemGroup>
+    <PackageReference Include="Ardalis.Specification" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BeanStock.Domain\BeanStock.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

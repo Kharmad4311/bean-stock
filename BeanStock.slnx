@@ -3,4 +3,25 @@
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
   </Folder>
+  <Folder Name="/items/documentation/" />
+  <Folder Name="/src/">
+    <Project Path="src/BeanStock.Api/BeanStock.Api.csproj" />
+    <Project Path="src/BeanStock.Worker/BeanStock.Worker.csproj" />
+  </Folder>
+  <Folder Name="/src/Application/">
+    <Project Path="src/BeanStock.Application.Abstractions/BeanStock.Application.Abstractions.csproj" />
+    <Project Path="src/BeanStock.Application/BeanStock.Application.csproj" />
+  </Folder>
+  <Folder Name="/src/Domain/">
+    <Project Path="src/BeanStock.Domain/BeanStock.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Infrastructure/">
+    <Project Path="src/BeanStock.Infrastructure.DummyJson/BeanStock.Infrastructure.DummyJson.csproj" />
+    <Project Path="src/BeanStock.Infrastructure.Persistence/BeanStock.Infrastructure.Persistence.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BeanStock.Application.UnitTests/BeanStock.Application.UnitTests.csproj" />
+    <Project Path="tests/BeanStock.Domain.UnitTests/BeanStock.Domain.UnitTests.csproj" />
+    <Project Path="tests/BeanStock.IntegrationTests/BeanStock.IntegrationTests.csproj" />
+  </Folder>
 </Solution>

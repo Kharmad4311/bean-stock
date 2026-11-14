@@ -7,7 +7,8 @@ API e-commerce de démonstration (test technique) : catalogue synchronisé depui
 ## Stack
 
 - C# / **.NET 10**, **SQL Server**, **EF Core**
-- Clean Architecture : `Domain` → `Application` → `Infrastructure` ; points d'entrée `Api` (Minimal APIs) et `Worker`
+- Clean Architecture, 7 projets : `Domain` → `Application.Abstractions` (ports) → `Application` (cas d'usage) ; `Infrastructure.Persistence` et `Infrastructure.DummyJson` ne dépendent que des ports ; points d'entrée `Api` (Minimal APIs) et `Worker`
+- `Mediator.SourceGenerator` uniquement dans les hôtes (`Api`, `Worker`) ; les handlers appelés par un hôte sont `public`
 - `Mediator` (martinothamar, source-generated) — **ne pas introduire MediatR**
 - `Ardalis.Specification` pour les **lectures uniquement**
 - `ErrorOr` pour les erreurs métier ; `FluentValidation` pour les entrées

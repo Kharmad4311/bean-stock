@@ -1,0 +1,29 @@
+# Dépendances locales de BeanStock.
+# Usage : copier .env.example en .env, renseigner le mot de passe, puis `docker compose up -d`.
+# L'API et le Worker se lancent depuis Visual Studio (ou `dotnet run`) et se connectent à ce conteneur.
+name: beanstock
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: beanstock-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      # Obligatoire : défini dans .env (jamais versionné)
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Définir MSSQL_SA_PASSWORD dans le fichier .env}
+    ports:
+      # Port côté machine hôte configurable si un SQL Server local occupe déjà 1433
+      - "${MSSQL_HOST_PORT:-1433}:1433"
+    volumes:
+      # Volume nommé : les données survivent à `docker compose down` (mais pas à `down -v`)
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -Q \"SELECT 1\" -b -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  sqlserver-data:
