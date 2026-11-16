@@ -50,4 +50,21 @@ public static class CartErrors
             ["expectedVersion"] = expectedVersion,
             ["currentVersion"] = currentVersion,
         });
+
+    public static Error CartNotFound => Error.NotFound(
+        code: "Cart.NotFound",
+        description: "The current user has no cart yet. Create it first.");
+
+    public static Error ProductNotFound(Guid productId) => Error.Validation(
+        code: "Cart.ProductNotFound",
+        description: "The product does not exist in the local catalog.",
+        metadata: new Dictionary<string, object> { ["productId"] = productId });
+
+    /// <summary>
+    /// The cart was changed by another request while this one was being saved. Not expected while cart writes
+    /// are serialized; kept as a safety net so that a concurrent change is never overwritten silently.
+    /// </summary>
+    public static Error ConcurrentUpdate => Error.Conflict(
+        code: "Cart.ConcurrentUpdate",
+        description: "The cart has been modified by another request. Read it again and retry.");
 }

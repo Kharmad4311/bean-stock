@@ -18,6 +18,9 @@ internal sealed class CartConfiguration : IEntityTypeConfiguration<Cart>
         // At most one cart per user, even under parallel creation requests (rule 1).
         builder.HasIndex(cart => cart.UserId).IsUnique();
 
+        // Concurrency token: an update only applies to the version read (safety net behind the cart lock).
+        builder.Property(cart => cart.Version).IsConcurrencyToken();
+
         builder.Ignore(cart => cart.Total);
 
         builder.HasMany(cart => cart.Lines)

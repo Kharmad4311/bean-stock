@@ -1,0 +1,23 @@
+info:
+  name: Remove Line
+  type: http
+  seq: 5
+
+http:
+  method: DELETE
+  url: "{{BaseUrl}}/me/cart/lines/{{LineId}}?version={{LineVersion}}"
+  params:
+    - name: version
+      value: "{{LineVersion}}"
+      type: query
+  headers:
+    - name: X-User-Id
+      value: "{{UserId}}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

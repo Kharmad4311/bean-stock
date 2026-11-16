@@ -32,28 +32,30 @@ BeanStock est la **marque** du service ; le catalogue est celui de DummyJSON, sy
 
 ## 4. Autres choix techniques
 
-- **EF Core** : mapping, migrations, `ExecuteUpdateAsync` pour les mises à jour atomiques conditionnelles.
-- **Ardalis.Specification** (MIT) : requêtes de **lecture** réutilisables et testables. Les écritures concurrentes n'utilisent volontairement **pas** de specification (SQL conditionnel dédié dans le repository).
+- **EF Core** : mapping, migrations, jetons de concurrence ; SQL explicite là où il porte une garantie (verrous).
+- **Ardalis.Specification** (MIT) : requêtes de **lecture** réutilisables et testables. Les écritures n'utilisent volontairement **pas** de specification : elles passent par des repositories dédiés dont les méthodes portent la garantie de concurrence.
 - **ErrorOr** (MIT) : les erreurs métier attendues sont des valeurs retournées, pas des exceptions. Chaque erreur a un code stable et des métadonnées, traduites en ProblemDetails (RFC 9457).
 - **FluentValidation** : validation des entrées dans un behavior.
 - **Minimal APIs**, groupées par module.
 - **Tests :** xUnit, Testcontainers SQL Server (un vrai moteur est indispensable pour tester verrous et index uniques), Shouldly/AwesomeAssertions (FluentAssertions est devenu commercial).
 
-## 5. Concurrence et cohérence
+## 5. Concurrence et cohérence du panier
 
-**Création de panier idempotente :** index unique sur `Carts.UserId`. INSERT ; en cas de violation d'unicité, relecture et retour du panier existant.
+Détail, contrat HTTP et correspondance règles ↔ tests : [`documentation/panier.md`](documentation/panier.md).
 
-**Écritures sur un panier :** chaque commande s'exécute dans une transaction qui commence par `UPDATE Carts SET Version = Version + 1 WHERE Id = @id`. Ce verrou de ligne sérialise les écritures **d'un même panier**, sur toutes les instances, sans composant supplémentaire. Si la demande est rejetée → rollback, la version ne change pas (règle 7).
+**Création idempotente :** index unique sur `Carts.UserId`. INSERT ; en cas de violation d'unicité, relecture et retour du panier existant (`201` si l'appel l'a créé, `200` sinon).
 
-**Versions de ligne (verrouillage optimiste) :** `UPDATE CartLines … WHERE Id = @id AND Version = @expected`. Zéro ligne affectée → conflit. Deux modifications sur des lignes différentes réussissent toutes deux (règle 9) ; deux modifications de la même ligne depuis la même version → une seule réussit.
+**Écritures sérialisées par panier :** toutes les écritures passent par une seule opération du port, `ICartRepository.ChangeAsync(userId, modification)`, qui ne laisse pas l'Application assembler les étapes (impossible d'oublier la transaction ou le commit). L'implémentation ouvre une transaction, puis prend `SELECT … WITH (UPDLOCK, ROWLOCK)` sur la ligne du panier. Les verrous de mise à jour étant incompatibles entre eux, un second écrivain du **même panier** attend la fin de la transaction du premier, quelle que soit l'instance ; les lectures (instantané RCSI) ne sont jamais bloquées. Le panier est chargé **après** l'obtention du verrou : il reflète tout ce qui a été validé avant. L'agrégat applique ensuite les règles et les versions ; demande rejetée → rien n'est enregistré, la transaction est annulée (règles 7 et 12).
 
-**Suppression :** physique ; une mise à jour n'insère jamais une ligne absente → pas de résurrection (règle 10).
+**Versions :** la version globale est incrémentée par l'agrégat, une seule fois par modification acceptée (une quantité inchangée ne compte pas). La version de ligne fournie par le client est comparée à la version relue sous verrou : différente → `409 Cart.LineVersionConflict`. Deux modifications de lignes différentes réussissent l'une après l'autre (règle 9) ; deux modifications de la même ligne depuis la même version → la seconde voit la nouvelle version et reçoit un conflit.
 
-**Ajout d'un produit déjà présent :** index unique `(CartId, ProductId)`, incrément de quantité contrôlé (≤ 999) dans la transaction.
+**Filet de sécurité :** les versions du panier et des lignes sont des jetons de concurrence EF Core (`UPDATE/DELETE … WHERE Version = @lue`). Inutiles tant que le verrou est respecté, ils garantissent qu'aucune écriture ne peut écraser silencieusement une autre si un futur code le contournait (`409 Cart.ConcurrentUpdate`).
 
-*Compromis :* les écritures d'un même panier sont sérialisées. Acceptable : un panier appartient à un seul utilisateur, la contention est faible.
+**Suppression physique :** une modification obsolète ne trouve plus la ligne (`404`) et ne peut pas la recréer (règle 10).
 
-**[À TRANCHER]** Transport de la version de ligne : corps de requête + `409 Conflict`, ou en-tête `If-Match` + `412 Precondition Failed`.
+*Pourquoi `UPDLOCK` et pas l'incrément de version en tête de transaction (envisagé au départ) :* l'incrément faisait monter la version même pour une demande sans effet et doublonnait celui de l'agrégat. *Pourquoi pas du tout-optimiste :* deux modifications de lignes différentes se disputeraient la version globale → conflit injustifié (règle 9) ou boucle de réessai. *Compromis :* les écritures d'un même panier sont sérialisées ; acceptable, un panier n'a qu'un utilisateur.
+
+**Version de ligne dans le corps + `409`** plutôt que `If-Match` + `412` : la consultation renvoie toutes les lignes d'un coup, leurs versions sont donc dans le corps ; le client les renvoie au même endroit (`DELETE` : paramètre `version`). `If-Match` reste une évolution possible si les lignes deviennent des ressources consultées une à une.
 
 ## 6. Synchronisation du catalogue
 
@@ -68,7 +70,7 @@ Détail, scénarios d'échec et configuration : [`documentation/synchronisation.
 
 ## 7. Identification de l'utilisateur
 
-Handler d'authentification simple lisant l'en-tête `X-User-Id` et produisant un `ClaimsPrincipal`. Routes en `/me/cart` : aucun identifiant de panier exposé. Remplaçable par JWT sans toucher aux cas d'usage.
+Handler d'authentification simple lisant l'en-tête `X-User-Id` (1 à 64 caractères parmi lettres, chiffres, `. _ - @`) et produisant un `ClaimsPrincipal`. En-tête absent ou invalide → `401` ProblemDetails. Routes en `/me/cart` : aucun identifiant de panier exposé, un utilisateur ne peut atteindre que le sien (la ligne d'un autre panier → `404`). Remplaçable par JWT sans toucher aux cas d'usage.
 
 ## 8. Limites et évolutions
 

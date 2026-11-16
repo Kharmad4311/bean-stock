@@ -1,6 +1,17 @@
 name: Local
 variables:
-  - secret: false
-    name: BaseUrl
+  - name: BaseUrl
     value: http://localhost:5080
-    description: "URL de l'API lancée en local (profil Start API)"
+    description: URL de l'API lancée en local (profil Start API)
+  - name: UserId
+    value: alice
+    description: Utilisateur courant, envoyé dans l'en-tête X-User-Id (identification simplifiée, voir README)
+  - name: ProductId
+    value: 01A1DAB7-644E-78BD-A0FE-0044F5BA6474
+    description: Identifiant local d'un produit (champ id de List Products)
+  - name: LineId
+    value: ""
+    description: Identifiant d'une ligne du panier (champ lineId de Get Cart)
+  - name: LineVersion
+    value: "0"
+    description: Version de la ligne lue dans Get Cart, à renvoyer pour la modifier ou la supprimer

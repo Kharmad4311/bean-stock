@@ -1,0 +1,26 @@
+info:
+  name: Add Line
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{BaseUrl}}/me/cart/lines"
+  headers:
+    - name: X-User-Id
+      value: "{{UserId}}"
+  body:
+    type: json
+    data: |-
+      {
+        "productId": "{{ProductId}}",
+        "quantity": 1
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

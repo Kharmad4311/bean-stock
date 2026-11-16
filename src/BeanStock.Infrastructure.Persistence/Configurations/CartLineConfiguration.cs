@@ -22,6 +22,9 @@ internal sealed class CartLineConfiguration : IEntityTypeConfiguration<CartLine>
         builder.Property(line => line.ProductName).HasMaxLength(Product.NameMaxLength).IsRequired();
         builder.Property(line => line.UnitPrice).HasPrecision(18, 2);
 
+        // Concurrency token: an update or delete only applies to the line version read.
+        builder.Property(line => line.Version).IsConcurrencyToken();
+
         builder.Ignore(line => line.Subtotal);
 
         // Products are deactivated, never deleted: deleting a product still referenced by a cart is refused.

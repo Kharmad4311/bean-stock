@@ -1,3 +1,4 @@
+using BeanStock.Application.Abstractions.Carts;
 using BeanStock.Application.Abstractions.Catalog;
 using BeanStock.Application.Abstractions.Concurrency;
 using BeanStock.Application.Abstractions.Persistence;
@@ -34,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
         services.AddScoped<ICatalogSyncStore, EfCatalogSyncStore>();
         services.AddScoped<ICatalogSyncRunStore, EfCatalogSyncRunStore>();
+        services.AddScoped<ICartRepository, EfCartRepository>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<BeanStockDbContext>(name: "sqlserver", tags: [HealthCheckTag]);

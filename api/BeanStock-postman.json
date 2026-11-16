@@ -1,0 +1,322 @@
+{
+  "info": {
+    "name": "BeanStock",
+    "description": null,
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Healthy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "{{BaseUrl}}/health/live",
+              "protocol": "",
+              "host": [
+                "{{BaseUrl}}"
+              ],
+              "path": [
+                "health",
+                "live"
+              ],
+              "query": [],
+              "variable": []
+            }
+          }
+        },
+        {
+          "name": "Healthy ready",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "{{BaseUrl}}/health/ready",
+              "protocol": "",
+              "host": [
+                "{{BaseUrl}}"
+              ],
+              "path": [
+                "health",
+                "ready"
+              ],
+              "query": [],
+              "variable": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "{{BaseUrl}}/products?pageSize=20&page=1",
+              "protocol": "",
+              "host": [
+                "{{BaseUrl}}"
+              ],
+              "path": [
+                "products?pageSize=20&page=1"
+              ],
+              "query": [
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ],
+              "variable": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Synchronize Catalog",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "{{BaseUrl}}/admin/catalog/sync",
+              "protocol": "",
+              "host": [
+                "{{BaseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "catalog",
+                "sync"
+              ],
+              "query": [],
+              "variable": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart",
+      "item": [
+        {
+          "name": "Create Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{UserId}}",
+                "description": "",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "description": "",
+            "url": {
+              "raw": "{{BaseUrl}}/me/cart",
+              "protocol": "",
+              "host": [
+                "{{BaseUrl}}"
+              ],
+              "path": [
+                "me",
+                "cart"
+              ],
+              "query": [],
+              "variable": []
+            }
+          }
+        },
+        {
+          "name": "Get Cart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{UserId}}",
+                "description": "",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "description": "",
+            "url": {
+              "raw": "{{BaseUrl}}/me/cart",
+              "protocol": "",
+              "host": [
+                "{{BaseUrl}}"
+              ],
+              "path": [
+                "me",
+                "cart"
+              ],
+              "query": [],
+              "variable": []
+            }
+          }
+        },
+        {
+          "name": "Add Line",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{UserId}}",
+                "description": "",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "description": "",
+            "url": {
+              "raw": "{{BaseUrl}}/me/cart/lines",
+              "protocol": "",
+              "host": [
+                "{{BaseUrl}}"
+              ],
+              "path": [
+                "me",
+                "cart",
+                "lines"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{ProductId}}\",\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Change Line Quantity",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{UserId}}",
+                "description": "",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "description": "",
+            "url": {
+              "raw": "{{BaseUrl}}/me/cart/lines/{{LineId}}",
+              "protocol": "",
+              "host": [
+                "{{BaseUrl}}"
+              ],
+              "path": [
+                "me",
+                "cart",
+                "lines",
+                "{{LineId}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 3,\n  \"version\": {{LineVersion}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Remove Line",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{UserId}}",
+                "description": "",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "description": "",
+            "url": {
+              "raw": "{{BaseUrl}}/me/cart/lines/{{LineId}}?version={{LineVersion}}",
+              "protocol": "",
+              "host": [
+                "{{BaseUrl}}"
+              ],
+              "path": [
+                "me",
+                "cart",
+                "lines",
+                "{{LineId}}?version={{LineVersion}}"
+              ],
+              "query": [
+                {
+                  "key": "version",
+                  "value": "{{LineVersion}}"
+                }
+              ],
+              "variable": []
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "BaseUrl",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "UserId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "ProductId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "LineId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "LineVersion",
+      "value": "",
+      "type": "default"
+    }
+  ]
+}

@@ -8,7 +8,7 @@ BeanStock est le nom de marque du service. Le catalogue provient de [DummyJSON](
 
 ## Statut
 
-🚧 **En cours de développement.** La solution démarre en local : base SQL Server, API (santé, catalogue paginé, synchronisation manuelle) et Worker (synchronisation automatique). Le panier arrive dans la prochaine itération. Les sections marquées *(à venir)* seront complétées au fur et à mesure.
+🚧 **En cours de développement.** La solution démarre en local : base SQL Server, API (santé, catalogue paginé, synchronisation manuelle, panier) et Worker (synchronisation automatique). Les sections marquées *(à venir)* seront complétées au fur et à mesure.
 
 ## Fonctionnalités
 
@@ -112,10 +112,10 @@ dotnet test
 | Projet | Contenu | Dépendance externe |
 |---|---|---|
 | `BeanStock.Domain.UnitTests` | Règles du panier et du produit | — |
-| `BeanStock.Application.UnitTests` | Cas d'usage (synchronisation…), validations | — |
+| `BeanStock.Application.UnitTests` | Cas d'usage (synchronisation, commandes du panier), validations | — |
 | `BeanStock.Infrastructure.DummyJson.UnitTests` | Client DummyJSON, avec un faux serveur HTTP | — |
 | `BeanStock.Worker.UnitTests` | Planificateur de synchronisation, en temps simulé | — |
-| `BeanStock.IntegrationTests` | API + SQL Server réel : concurrence, rollback, verrou distribué | **Docker** (Testcontainers) |
+| `BeanStock.IntegrationTests` | API + SQL Server réel : règles du panier, concurrence sur deux instances, rollback, verrou distribué | **Docker** (Testcontainers) |
 
 Aucun test n'appelle le vrai DummyJSON. Pour lancer uniquement les tests sans Docker : `dotnet test --filter "FullyQualifiedName!~IntegrationTests"`.
 
@@ -218,7 +218,30 @@ curl "http://localhost:5080/products?page=1&pageSize=20"
 
 Retourne les produits **actifs** du catalogue local, triés par identifiant fournisseur : `items`, `page`, `pageSize`, `totalCount`, `totalPages`. Chaque produit indique `lastUpdatedAt`, la date de sa dernière modification locale (création, changement de valeur, réactivation). Les produits retirés par le fournisseur n'apparaissent plus, mais restent lisibles dans les paniers. `pageSize` est limité à 100 ; une valeur invalide renvoie un `400` au format ProblemDetails.
 
-### Panier *(à venir)*
+### Panier
+
+L'authentification est hors périmètre : l'utilisateur courant est déclaré dans l'en-tête **`X-User-Id`** (1 à 64 caractères : lettres, chiffres, `. _ - @`). Sans cet en-tête, les routes du panier répondent `401`. Dans Bruno, il est porté par la variable `UserId` de l'environnement (`alice` par défaut).
+
+```bash
+# Créer (ou récupérer) son panier : 201 à la création, 200 ensuite
+curl -X POST http://localhost:5080/me/cart -H "X-User-Id: alice"
+
+# Ajouter un produit (productId = champ id de GET /products) ; réajouter augmente la quantité
+curl -X POST http://localhost:5080/me/cart/lines -H "X-User-Id: alice" \
+     -H "Content-Type: application/json" -d '{"productId":"<id>","quantity":2}'
+
+# Consulter : lignes, prix figés, total, version du panier et version de chaque ligne
+curl http://localhost:5080/me/cart -H "X-User-Id: alice"
+
+# Remplacer une quantité, en renvoyant la version de la ligne lue
+curl -X PUT http://localhost:5080/me/cart/lines/<lineId> -H "X-User-Id: alice" \
+     -H "Content-Type: application/json" -d '{"quantity":5,"version":0}'
+
+# Supprimer une ligne (version en paramètre)
+curl -X DELETE "http://localhost:5080/me/cart/lines/<lineId>?version=1" -H "X-User-Id: alice"
+```
+
+Chaque opération réussie renvoie le panier complet avec ses nouvelles versions. Si la ligne a changé depuis la version envoyée, la demande est refusée avec un `409` (`code` : `Cart.LineVersionConflict`) : relire le panier et renvoyer la demande. Contrat complet, codes d'erreur et fonctionnement en concurrence : [`documentation/panier.md`](documentation/panier.md). Mode opératoire de test manuel, y compris sur deux instances : [`documentation/tests-manuels-panier.md`](documentation/tests-manuels-panier.md) (fonctions PowerShell dans `documentation/scripts/panier.ps1`).
 
 ## Usage de l'IA
 
