@@ -138,6 +138,8 @@ dotnet tool restore
 dotnet ef migrations add <Nom> --project src/BeanStock.Infrastructure.Persistence --startup-project src/BeanStock.Api --output-dir Migrations
 ```
 
+Les outils EF créent le `DbContext` par `BeanStockDesignTimeDbContextFactory`, sans démarrer l'hôte de l'API : générer une migration ou le bundle du `migrator` ne demande aucune chaîne de connexion. Une commande qui touche la base la reçoit explicitement, par exemple `dotnet ef database update --connection "<chaîne>" --project src/BeanStock.Infrastructure.Persistence --startup-project src/BeanStock.Api`.
+
 ## Lancer les tests
 
 ```bash
