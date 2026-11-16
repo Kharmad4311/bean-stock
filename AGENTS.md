@@ -59,7 +59,7 @@ Tout changement touchant ces points doit être accompagné d'un test d'intégrat
 
 ## Docker et CI
 
-- Un Dockerfile par hôte (`src/BeanStock.Api/Dockerfile`, cibles `final` et `migrator` ; `src/BeanStock.Worker/Dockerfile`), contexte de build = racine. Tout projet ajouté aux dépendances d'un hôte doit voir son `.csproj` copié avant le `restore` dans le Dockerfile concerné.
+- Un Dockerfile par hôte (`src/BeanStock.Api/Dockerfile`, cibles `final` et `migrator` ; `src/BeanStock.Worker/Dockerfile`), contexte de build = racine. Tout projet ajouté aux dépendances d'un hôte doit voir son `.csproj` copié avant le `restore` dans le Dockerfile concerné. Tout fichier racine qui influence la compilation (`Directory.*.props`, `.editorconfig`…) doit aussi être copié, sinon le build de l'image diverge de celui du poste.
 - Les conteneurs applicatifs n'appliquent jamais les migrations : c'est le rôle du service `migrator` (bundle EF Core) dans `compose.yaml`.
 - Aucun secret dans les Dockerfiles, `compose.yaml` ou les workflows : les valeurs viennent de `.env` (local) ; la CI n'en utilise aucun.
 - La CI doit rester verte : `pr.yml` (PR : build, tests, couverture) et `ci.yml` (main : idem + images) appellent tous deux le workflow réutilisable `build-test.yml`. Une commande de build ou de test se change dans `build-test.yml` uniquement ; une commande d'image dans `ci.yml`. Le README est mis à jour dans le même changement.

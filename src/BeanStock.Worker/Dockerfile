@@ -18,6 +18,9 @@ COPY src/BeanStock.Infrastructure.DummyJson/BeanStock.Infrastructure.DummyJson.c
 COPY src/BeanStock.Worker/BeanStock.Worker.csproj src/BeanStock.Worker/
 RUN dotnet restore src/BeanStock.Worker/BeanStock.Worker.csproj
 
+# .editorconfig pilote les analyseurs (ex. migrations marquées generated_code) : sans lui,
+# le build Release diffère de celui du poste et de la CI. Copié après le restore, qu'il n'influence pas.
+COPY .editorconfig ./
 COPY src/ src/
 RUN dotnet publish src/BeanStock.Worker/BeanStock.Worker.csproj --configuration Release --no-restore --output /app/publish
 
