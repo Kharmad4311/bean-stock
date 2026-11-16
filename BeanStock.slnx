@@ -8,13 +8,20 @@
     <File Path="coverage.config" />
   </Folder>
   <Folder Name="/items/docker/">
+    <File Path=".dockerignore" />
     <File Path=".env.example" />
     <File Path="compose.yaml" />
+  </Folder>
+  <Folder Name="/items/ci/">
+    <File Path=".github/workflows/build-test.yml" />
+    <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/pr.yml" />
   </Folder>
   <Folder Name="/items/documentation/">
     <File Path="AGENTS.md" />
     <File Path="DECISIONS.md" />
     <File Path="README.md" />
+    <File Path="documentation/bilan-ia.md" />
     <File Path="documentation/panier.md" />
     <File Path="documentation/tests-manuels-panier.md" />
     <File Path="documentation/scripts/panier.ps1" />

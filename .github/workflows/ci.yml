@@ -1,0 +1,44 @@
+# Intégration continue de main : build, tests et couverture (comme la PR),
+# puis construction des images Docker (sans publication).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    uses: ./.github/workflows/build-test.yml
+
+  docker:
+    name: Image ${{ matrix.image }}
+    needs: build-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: api
+            dockerfile: src/BeanStock.Api/Dockerfile
+            target: final
+          - image: migrator
+            dockerfile: src/BeanStock.Api/Dockerfile
+            target: migrator
+          - image: worker
+            dockerfile: src/BeanStock.Worker/Dockerfile
+            target: final
+    steps:
+      - uses: actions/checkout@v6
+
+      # Vérifie que l'image se construit ; aucune publication dans un registre.
+      - name: Construire l'image
+        run: docker build --file ${{ matrix.dockerfile }} --target ${{ matrix.target }} --tag beanstock-${{ matrix.image }}:ci .

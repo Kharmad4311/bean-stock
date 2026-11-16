@@ -57,6 +57,13 @@ Tout changement touchant ces points doit être accompagné d'un test d'intégrat
 - Le démarrage local doit rester possible avec le conteneur SQL Server fourni **ou** une instance SQL Server installée ; Docker n'est obligatoire que pour les tests d'intégration (Testcontainers).
 - Les fichiers de configuration et de documentation à la racine sont référencés dans le dossier de solution `/items` du `.slnx` (sous-dossiers `docker`, `documentation`).
 
+## Docker et CI
+
+- Un Dockerfile par hôte (`src/BeanStock.Api/Dockerfile`, cibles `final` et `migrator` ; `src/BeanStock.Worker/Dockerfile`), contexte de build = racine. Tout projet ajouté aux dépendances d'un hôte doit voir son `.csproj` copié avant le `restore` dans le Dockerfile concerné.
+- Les conteneurs applicatifs n'appliquent jamais les migrations : c'est le rôle du service `migrator` (bundle EF Core) dans `compose.yaml`.
+- Aucun secret dans les Dockerfiles, `compose.yaml` ou les workflows : les valeurs viennent de `.env` (local) ; la CI n'en utilise aucun.
+- La CI doit rester verte : `pr.yml` (PR : build, tests, couverture) et `ci.yml` (main : idem + images) appellent tous deux le workflow réutilisable `build-test.yml`. Une commande de build ou de test se change dans `build-test.yml` uniquement ; une commande d'image dans `ci.yml`. Le README est mis à jour dans le même changement.
+
 ## Langue
 
 Code, noms et commentaires techniques en anglais ; documentation en français.

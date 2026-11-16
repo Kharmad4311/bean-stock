@@ -1,7 +1,15 @@
-# Dépendances locales de BeanStock.
-# Usage : copier .env.example en .env, renseigner le mot de passe, puis `docker compose up -d`.
-# L'API et le Worker se lancent depuis Visual Studio (ou `dotnet run`) et se connectent à ce conteneur.
+# BeanStock en local. Prérequis : copier .env.example en .env et renseigner le mot de passe.
+#
+#   docker compose up -d                          → SQL Server seul ; l'API et le Worker se lancent
+#                                                   depuis Visual Studio (ou `dotnet run`).
+#   docker compose --profile app up -d --build    → toute la pile : SQL Server, migrations,
+#                                                   API (http://localhost:5080) et 2 Workers.
+#   docker compose --profile app down             → arrêt (ajouter -v pour supprimer les données).
 name: beanstock
+
+# Chaîne de connexion des conteneurs applicatifs (réseau interne Docker : hôte « sqlserver »).
+# Compte sa : acceptable pour un environnement local de démonstration uniquement.
+x-db-connection: &db-connection "Server=sqlserver,1433;Database=BeanStock;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True"
 
 services:
   sqlserver:
@@ -24,6 +32,57 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
+
+  # Applique les migrations une seule fois, avant l'API et les Workers.
+  # Les instances applicatives ne modifient jamais le schéma elles-mêmes.
+  migrator:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: src/BeanStock.Api/Dockerfile
+      target: migrator
+    image: beanstock-migrator:local
+    command: ["--connection", *db-connection]
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: src/BeanStock.Api/Dockerfile
+      target: final
+    image: beanstock-api:local
+    environment:
+      # Development : documentation interactive Scalar disponible sur /scalar
+      ASPNETCORE_ENVIRONMENT: Development
+      Database__ApplyMigrationsOnStartup: "false"
+      ConnectionStrings__BeanStock: *db-connection
+    ports:
+      - "${API_HOST_PORT:-5080}:8080"
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+
+  # Deux instances : la planification et le verrou distribué garantissent
+  # qu'une seule synchronisation s'exécute par période (visible dans les logs).
+  worker:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: src/BeanStock.Worker/Dockerfile
+      target: final
+    image: beanstock-worker:local
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__BeanStock: *db-connection
+    deploy:
+      replicas: 2
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
 
 volumes:
   sqlserver-data:
