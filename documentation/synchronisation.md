@@ -1,6 +1,6 @@
 # Synchronisation du catalogue
 
-Ce document décrit la synchronisation du catalogue DummyJSON vers la base locale : son fonctionnement, les garanties qu'elle apporte en multi-instance, sa configuration et ses limites. La version courte se trouve dans [`DECISIONS.md`](../DECISIONS.md) §6.
+Ce document décrit la synchronisation du catalogue DummyJSON vers la base locale : son fonctionnement, les garanties qu'elle apporte en multi-instance, sa configuration et ses limites. La version courte se trouve dans [`DECISIONS.md`](../DECISIONS.md) §5.
 
 Voir aussi : [`verrou-distribue.md`](verrou-distribue.md) (fiche détaillée sur `sp_getapplock`, avec sources) et [`tests-manuels-synchronisation.md`](tests-manuels-synchronisation.md) (mode opératoire de test manuel).
 
@@ -244,7 +244,7 @@ Une transaction qui modifie beaucoup de produits pose des verrous exclusifs, sur
 
 La migration `EnableReadCommittedSnapshot` active `READ_COMMITTED_SNAPSHOT` sur la base. Elle est seule dans sa migration : `ALTER DATABASE` ne peut pas s'exécuter dans une transaction, et l'isoler évite qu'un échec laisse une migration à moitié appliquée. Les lecteurs lisent alors la dernière version validée, sans attendre les écrivains : le catalogue reste consultable pendant toute la synchronisation, et ne montre jamais un état intermédiaire. Azure SQL Database active ce réglage par défaut.
 
-Les verrous de ligne sur lesquels repose la concurrence du panier ne sont **pas** affectés : les `UPDATE` continuent de poser leurs verrous et lisent la dernière version validée.
+Le verrou sur lequel repose la concurrence du panier n'est **pas** affecté : une lecture avec indicateur de verrouillage (`UPDLOCK`) pose toujours son verrou et lit la dernière version validée, comme les `UPDATE` (voir [`panier.md`](panier.md)).
 
 Le test `Catalog_reads_are_not_blocked_by_an_open_write_transaction` le démontre : une transaction d'écriture reste ouverte sur un produit, et la liste renvoie immédiatement l'ancienne valeur.
 

@@ -8,7 +8,7 @@ BeanStock est le nom de marque du service. Le catalogue provient de [DummyJSON](
 
 ## Statut
 
-🚧 **En cours de développement.** La solution démarre en local : base SQL Server, API (santé, catalogue paginé, synchronisation manuelle) et Worker (synchronisation automatique). Le panier arrive dans la prochaine itération. Les sections marquées *(à venir)* seront complétées au fur et à mesure.
+Fonctionnel en local : base SQL Server, API (santé, catalogue paginé, synchronisation manuelle, panier) et Worker (synchronisation automatique), couverts par des tests unitaires et d'intégration. Restent à livrer : les images Docker de l'API et du Worker, et la pipeline CI (marquées *(à venir)*).
 
 ## Fonctionnalités
 
@@ -28,13 +28,25 @@ BeanStock est le nom de marque du service. Le catalogue provient de [DummyJSON](
 
 Les raisons de ces choix, leurs compromis et leurs limites sont détaillés dans [`DECISIONS.md`](DECISIONS.md).
 
+## Documentation
+
+| Document | Contenu |
+|---|---|
+| [`DECISIONS.md`](DECISIONS.md) | Architecture, décisions importantes, compromis, limites (2 pages) |
+| [`documentation/panier.md`](documentation/panier.md) | Contrat HTTP du panier, codes d'erreur, garanties de concurrence, règles ↔ tests |
+| [`documentation/synchronisation.md`](documentation/synchronisation.md) | Synchronisation du catalogue : déroulement, multi-instance, planification, échecs |
+| [`documentation/verrou-distribue.md`](documentation/verrou-distribue.md) | Fiche sur `sp_getapplock`, le verrou de la synchronisation, avec sources |
+| [`documentation/tests-manuels-panier.md`](documentation/tests-manuels-panier.md) | Mode opératoire de test manuel du panier, y compris sur deux instances |
+| [`documentation/tests-manuels-synchronisation.md`](documentation/tests-manuels-synchronisation.md) | Mode opératoire de test manuel de la synchronisation |
+| [`AGENTS.md`](AGENTS.md) | Instructions fournies aux agents IA qui travaillent sur le dépôt |
+
 ## Structure du dépôt
 
 ```
 src/             Code source (Domain, Application, Infrastructure, Api, Worker)
 tests/           Tests unitaires et d'intégration
-api/             Collection Bruno pour appeler l'API
-documentation/   Documentation détaillée (synchronisation, verrou distribué, tests manuels…)
+api/             Collection Bruno (source) et son export Postman
+documentation/   Documentation détaillée et scripts de test manuel
 pipelines/       Pipelines CI en YAML (à venir)
 compose.yaml     Dépendances locales (SQL Server)
 DECISIONS.md     Décisions d'architecture et compromis
@@ -47,7 +59,8 @@ AGENTS.md        Instructions fournies aux agents IA utilisés sur le projet
 - **SQL Server** : au choix, le conteneur fourni (Docker) ou une instance installée localement (Developer, Express…)
 - [Docker](https://www.docker.com/) pour les tests d'intégration (Testcontainers) et, si on le souhaite, pour SQL Server en local
 - Windows 11 : **Smart App Control désactivé** (Sécurité Windows → Contrôle des applications et du navigateur). Il bloque les assemblies non signées produites par chaque build, y compris lorsqu'elles sont chargées par `dotnet ef` ; aucune exclusion par dossier n'existe.
-- [Bruno](https://www.usebruno.com/) (facultatif) pour appeler l'API avec la collection fournie
+- [Bruno](https://www.usebruno.com/) ou Postman (facultatif) pour appeler l'API avec la collection fournie
+- PowerShell 7 (facultatif) pour les scripts des tests manuels du panier
 
 ## Démarrage local
 
@@ -112,10 +125,10 @@ dotnet test
 | Projet | Contenu | Dépendance externe |
 |---|---|---|
 | `BeanStock.Domain.UnitTests` | Règles du panier et du produit | — |
-| `BeanStock.Application.UnitTests` | Cas d'usage (synchronisation…), validations | — |
+| `BeanStock.Application.UnitTests` | Cas d'usage (synchronisation, commandes du panier), validations | — |
 | `BeanStock.Infrastructure.DummyJson.UnitTests` | Client DummyJSON, avec un faux serveur HTTP | — |
 | `BeanStock.Worker.UnitTests` | Planificateur de synchronisation, en temps simulé | — |
-| `BeanStock.IntegrationTests` | API + SQL Server réel : concurrence, rollback, verrou distribué | **Docker** (Testcontainers) |
+| `BeanStock.IntegrationTests` | API + SQL Server réel : règles du panier, concurrence sur deux instances, rollback, verrou distribué | **Docker** (Testcontainers) |
 
 Aucun test n'appelle le vrai DummyJSON. Pour lancer uniquement les tests sans Docker : `dotnet test --filter "FullyQualifiedName!~IntegrationTests"`.
 
@@ -208,7 +221,15 @@ FROM CatalogSyncRuns ORDER BY StartedAt DESC;
 
 ## Utilisation de l'API
 
-La collection [Bruno](https://www.usebruno.com/) du dossier `api/` contient les requêtes principales. Ouvrir le dossier dans Bruno (*Open Collection*) puis sélectionner l'environnement **Local** (`BaseUrl` = `http://localhost:5080`). D'autres environnements (recette, production…) pourront y être ajoutés sous `api/environments/`.
+Le dossier `api/` contient toutes les requêtes, organisées par module (Health, Products, Admin, Cart).
+
+> **Pourquoi Bruno, et pourquoi un export Postman.** Le projet est développé avec [Bruno](https://www.usebruno.com/), par habitude et parce que sa collection est faite de simples fichiers texte (YAML) : elle vit dans le dépôt, se versionne avec Git et évolue dans les mêmes commits que l'API, revue de code comprise. Pour ne pas imposer cet outil, la collection est aussi fournie au format **Postman Collection v2.1** (`api/BeanStock-postman.json`), le format d'échange le plus répandu : il s'importe dans Postman, l'outil le plus utilisé, comme dans la plupart des autres clients HTTP (Insomnia, Hoppscotch, Thunder Client…). La collection Bruno reste la source ; l'export est régénéré à chaque changement des requêtes.
+
+- **Bruno** : ouvrir le dossier `api/` (*Open Collection*), puis sélectionner l'environnement **Local**. D'autres environnements (recette, production…) pourront être ajoutés sous `api/environments/`.
+- **Postman ou autre client** : importer `api/BeanStock-postman.json`. Les valeurs par défaut sont dans les variables de la collection (`BaseUrl` = `http://localhost:5080`, `UserId` = `alice`).
+- **Scalar** : documentation interactive générée depuis le code, sur http://localhost:5080/scalar (Development).
+
+Les requêtes du panier utilisent les variables `ProductId`, `LineId` et `LineVersion`, à renseigner avec les valeurs des réponses (`id` d'un produit, `lineId` et `version` d'une ligne).
 
 ### Catalogue
 
@@ -218,8 +239,31 @@ curl "http://localhost:5080/products?page=1&pageSize=20"
 
 Retourne les produits **actifs** du catalogue local, triés par identifiant fournisseur : `items`, `page`, `pageSize`, `totalCount`, `totalPages`. Chaque produit indique `lastUpdatedAt`, la date de sa dernière modification locale (création, changement de valeur, réactivation). Les produits retirés par le fournisseur n'apparaissent plus, mais restent lisibles dans les paniers. `pageSize` est limité à 100 ; une valeur invalide renvoie un `400` au format ProblemDetails.
 
-### Panier *(à venir)*
+### Panier
+
+L'authentification est hors périmètre : l'utilisateur courant est déclaré dans l'en-tête **`X-User-Id`** (1 à 64 caractères : lettres, chiffres, `. _ - @`). Sans cet en-tête, les routes du panier répondent `401`. Dans Bruno et Postman, il est porté par la variable `UserId` (`alice` par défaut).
+
+```bash
+# Créer (ou récupérer) son panier : 201 à la création, 200 ensuite
+curl -X POST http://localhost:5080/me/cart -H "X-User-Id: alice"
+
+# Ajouter un produit (productId = champ id de GET /products) ; réajouter augmente la quantité
+curl -X POST http://localhost:5080/me/cart/lines -H "X-User-Id: alice" \
+     -H "Content-Type: application/json" -d '{"productId":"<id>","quantity":2}'
+
+# Consulter : lignes, prix figés, total, version du panier et version de chaque ligne
+curl http://localhost:5080/me/cart -H "X-User-Id: alice"
+
+# Remplacer une quantité, en renvoyant la version de la ligne lue
+curl -X PUT http://localhost:5080/me/cart/lines/<lineId> -H "X-User-Id: alice" \
+     -H "Content-Type: application/json" -d '{"quantity":5,"version":0}'
+
+# Supprimer une ligne (version en paramètre)
+curl -X DELETE "http://localhost:5080/me/cart/lines/<lineId>?version=1" -H "X-User-Id: alice"
+```
+
+Chaque opération réussie renvoie le panier complet avec ses nouvelles versions. Si la ligne a changé depuis la version envoyée, la demande est refusée avec un `409` (`code` : `Cart.LineVersionConflict`) : relire le panier et renvoyer la demande. Contrat complet, codes d'erreur et fonctionnement en concurrence : [`documentation/panier.md`](documentation/panier.md). Mode opératoire de test manuel, y compris sur deux instances : [`documentation/tests-manuels-panier.md`](documentation/tests-manuels-panier.md), avec des fonctions PowerShell prêtes à l'emploi (`documentation/scripts/panier.ps1`).
 
 ## Usage de l'IA
 
-Ce projet est développé avec l'assistance d'outils d'IA. Les instructions qui encadrent les agents sont versionnées dans [`AGENTS.md`](AGENTS.md) ; le bilan d'utilisation (outils, vérifications, exemples de propositions retenues ou rejetées) sera documenté dans `documentation/`.
+Ce projet est développé avec l'assistance d'outils d'IA. Les instructions qui encadrent les agents sont versionnées dans [`AGENTS.md`](AGENTS.md). Le bilan d'utilisation (outils, vérifications, exemples de propositions retenues, adaptées ou rejetées) *(à venir)* sera dans `documentation/`.

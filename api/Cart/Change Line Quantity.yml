@@ -1,0 +1,26 @@
+info:
+  name: Change Line Quantity
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: "{{BaseUrl}}/me/cart/lines/{{LineId}}"
+  headers:
+    - name: X-User-Id
+      value: "{{UserId}}"
+  body:
+    type: json
+    data: |-
+      {
+        "quantity": 3,
+        "version": {{LineVersion}}
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

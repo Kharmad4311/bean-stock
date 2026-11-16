@@ -19,8 +19,9 @@ API e-commerce de démonstration (test technique) : catalogue synchronisé depui
 
 - `Domain` ne référence aucun package d'infrastructure (pas d'EF, pas d'ASP.NET).
 - Les règles métier du panier (quantité 1–999, unicité produit, prix/nom figés au premier ajout, versions) vivent dans l'agrégat `Cart`.
-- Les écritures concurrentes passent par des méthodes de repository dédiées (`ExecuteUpdateAsync` conditionnel), jamais par une specification.
-- Toute commande d'écriture sur un panier commence par l'incrément de `Carts.Version` dans sa transaction (verrou de ligne). Ne pas contourner ce mécanisme.
+- Les écritures passent par des méthodes de repository dédiées, jamais par une specification (réservées aux lectures).
+- Toute modification du contenu d'un panier passe par `ICartRepository.ChangeAsync` : l'implémentation ouvre la transaction, verrouille la ligne du panier (`UPDLOCK`), le charge, applique la modification et n'enregistre que si elle est acceptée. Le port n'expose volontairement pas ces étapes séparément : ne pas réintroduire de `GetForUpdate`/`Save` ni de service applicatif qui les assemble. Les jetons de concurrence (`Version`) ne sont qu'un filet de sécurité. Voir `documentation/panier.md`.
+- L'utilisateur courant vient du `ClaimsPrincipal` (en-tête `X-User-Id`) ; aucune route n'expose d'identifiant de panier.
 - Les erreurs métier attendues sont retournées via `ErrorOr`, pas levées en exception. Les exceptions sont réservées à l'inattendu.
 - Toute réponse d'erreur HTTP est un ProblemDetails.
 - Les hôtes (`Api`, `Worker`) ne contiennent que des déclencheurs : ils envoient des commandes/requêtes via `ISender`, jamais d'appel direct à un repository ou au fournisseur. La synchronisation est **un seul** cas d'usage (`SynchronizeCatalogCommand`), partagé par le Worker et `POST /admin/catalog/sync`.
@@ -50,7 +51,8 @@ Tout changement touchant ces points doit être accompagné d'un test d'intégrat
 
 - Tenir la documentation à jour **dans le même changement** que le code : `README.md`, `DECISIONS.md` (2 pages max), `documentation/`.
 - Documenter ce qui aide à comprendre ou à exploiter — pas de paraphrase du code.
-- Tout endpoint ajouté ou modifié est reflété dans la collection Bruno (`api/`, format YAML OpenCollection), dans le même changement.
+- Tout endpoint ajouté ou modifié est reflété dans la collection Bruno (`api/`, format YAML OpenCollection), dans le même changement. La collection Bruno est la source : `api/BeanStock-postman.json` en est un export (Bruno → *Share* → *Export* → Postman), à régénérer quand les requêtes changent, en gardant les valeurs par défaut non sensibles de ses variables.
+- Tout changement de comportement observable est reflété dans le mode opératoire de test manuel concerné (`documentation/tests-manuels-*.md`).
 - Les environnements Bruno (`api/environments/`) ne contiennent que des valeurs non sensibles (URL locales…) ; jamais de jeton ni de mot de passe.
 - Le démarrage local doit rester possible avec le conteneur SQL Server fourni **ou** une instance SQL Server installée ; Docker n'est obligatoire que pour les tests d'intégration (Testcontainers).
 - Les fichiers de configuration et de documentation à la racine sont référencés dans le dossier de solution `/items` du `.slnx` (sous-dossiers `docker`, `documentation`).

@@ -26,20 +26,29 @@ internal static class ErrorOrResults
                 .GroupBy(error => error.Code)
                 .ToDictionary(group => group.Key, group => group.Select(error => error.Description).ToArray());
 
-            return TypedResults.ValidationProblem(validationErrors);
+            // A single business error (e.g. Cart.QuantityLimitExceeded) also exposes its code and metadata.
+            return TypedResults.ValidationProblem(
+                validationErrors,
+                extensions: errors.Count == 1 ? ToExtensions(errors[0]) : null);
         }
 
         var firstError = errors[0];
-        var extensions = new Dictionary<string, object?> { ["code"] = firstError.Code };
-        foreach (var (key, value) in firstError.Metadata ?? [])
-        {
-            extensions[key] = value;
-        }
 
         return TypedResults.Problem(
             statusCode: ToStatusCode(firstError),
             title: firstError.Description,
-            extensions: extensions);
+            extensions: ToExtensions(firstError));
+    }
+
+    private static Dictionary<string, object?> ToExtensions(Error error)
+    {
+        var extensions = new Dictionary<string, object?> { ["code"] = error.Code };
+        foreach (var (key, value) in error.Metadata ?? [])
+        {
+            extensions[key] = value;
+        }
+
+        return extensions;
     }
 
     private static int ToStatusCode(Error error) => error.NumericType switch
