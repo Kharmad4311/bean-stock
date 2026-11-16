@@ -27,7 +27,7 @@ public static class DependencyInjection
                 "Set it with user secrets or the ConnectionStrings__BeanStock environment variable (see README).");
         }
 
-        services.AddDbContext<BeanStockDbContext>(options => options.UseSqlServer(connectionString));
+        services.AddDbContext<BeanStockDbContext>(options => ConfigureSqlServer(options, connectionString));
         services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
 
         // Scoped: the lock, the transaction and the catalog writes share the DbContext (and connection) of the scope.
@@ -42,4 +42,11 @@ public static class DependencyInjection
 
         return services;
     }
+
+    /// <summary>
+    /// Provider configuration shared by the runtime registration and the design-time factory,
+    /// so that migrations are generated with exactly the options used at runtime.
+    /// </summary>
+    internal static void ConfigureSqlServer(DbContextOptionsBuilder options, string connectionString)
+        => options.UseSqlServer(connectionString);
 }
