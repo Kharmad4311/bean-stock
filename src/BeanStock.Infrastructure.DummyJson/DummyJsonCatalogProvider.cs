@@ -10,8 +10,9 @@ namespace BeanStock.Infrastructure.DummyJson;
 /// Reads the full DummyJSON catalog, page by page.
 /// </summary>
 /// <remarks>
-/// Any HTTP error or inconsistent response throws: callers never receive a partial catalog.
-/// Transient failures are retried by the resilience handler configured on the HttpClient.
+/// Any HTTP error, timeout or inconsistent response surfaces as a <see cref="CatalogProviderException"/>:
+/// callers never receive a partial catalog. Transient failures are retried beforehand by the resilience
+/// handler configured on the HttpClient.
 /// </remarks>
 internal sealed class DummyJsonCatalogProvider(HttpClient httpClient, IOptions<DummyJsonOptions> options)
     : ICatalogProvider
@@ -19,6 +20,21 @@ internal sealed class DummyJsonCatalogProvider(HttpClient httpClient, IOptions<D
     private const string SelectedFields = "title,category,price,stock,availabilityStatus,meta";
 
     public async Task<IReadOnlyList<ProviderProduct>> GetAllProductsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await FetchAllAsync(cancellationToken);
+        }
+        catch (Exception exception) when (
+            exception is not CatalogProviderException
+            && !(exception is OperationCanceledException && cancellationToken.IsCancellationRequested))
+        {
+            // HTTP errors, timeouts (including the resilience handler's), malformed JSON...
+            throw new CatalogProviderException($"The DummyJSON catalog could not be read: {exception.Message}", exception);
+        }
+    }
+
+    private async Task<IReadOnlyList<ProviderProduct>> FetchAllAsync(CancellationToken cancellationToken)
     {
         var pageSize = options.Value.PageSize;
         var products = new List<ProviderProduct>();
@@ -31,13 +47,13 @@ internal sealed class DummyJsonCatalogProvider(HttpClient httpClient, IOptions<D
             expectedTotal ??= page.Total;
             if (page.Total != expectedTotal)
             {
-                throw new InvalidOperationException(
+                throw new CatalogProviderException(
                     $"DummyJSON total changed during the fetch ({expectedTotal} then {page.Total}).");
             }
 
             if (page.Products.Count == 0 && products.Count < expectedTotal)
             {
-                throw new InvalidOperationException(
+                throw new CatalogProviderException(
                     $"DummyJSON returned an empty page after {products.Count} of {expectedTotal} products.");
             }
 
@@ -54,7 +70,7 @@ internal sealed class DummyJsonCatalogProvider(HttpClient httpClient, IOptions<D
             $"products?limit={limit}&skip={skip}&select={SelectedFields}");
 
         return await httpClient.GetFromJsonAsync<DummyJsonProductsPage>(requestUri, cancellationToken)
-            ?? throw new InvalidOperationException("DummyJSON returned an empty response body.");
+            ?? throw new CatalogProviderException("DummyJSON returned an empty response body.");
     }
 
     private static ProviderProduct ToProviderProduct(DummyJsonProduct product) => new(

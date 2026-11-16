@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Client DummyJSON testé avec un HttpMessageHandler simulé : aucun appel réseau. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BeanStock.Infrastructure.DummyJson\BeanStock.Infrastructure.DummyJson.csproj" />
+  </ItemGroup>
+
+</Project>

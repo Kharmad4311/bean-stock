@@ -2,6 +2,7 @@ using BeanStock.Application;
 using BeanStock.Application.Common.Behaviors;
 using BeanStock.Infrastructure.DummyJson;
 using BeanStock.Infrastructure.Persistence;
+using BeanStock.Worker.Scheduling;
 using Mediator;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -16,7 +17,9 @@ builder.Services.AddMediator((MediatorOptions options) =>
     options.PipelineBehaviors = [typeof(ValidationBehavior<,>)];
 });
 
-// Synchronization triggers (BackgroundService) are added with the catalog synchronization use case.
+// The worker only holds triggers: the synchronization itself is the SynchronizeCatalogCommand use case,
+// also sent by the API (POST /admin/catalog/sync).
+builder.Services.AddCatalogSyncScheduling();
 
 var host = builder.Build();
 await host.RunAsync();

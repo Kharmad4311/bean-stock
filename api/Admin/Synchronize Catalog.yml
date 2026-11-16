@@ -1,0 +1,16 @@
+info:
+  name: Synchronize Catalog
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{BaseUrl}}/admin/catalog/sync"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

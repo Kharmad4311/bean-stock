@@ -26,6 +26,6 @@ internal sealed class ActiveProductsPageSpec : Specification<Product, ProductRes
             product.Price,
             product.Stock,
             product.AvailabilityStatus,
-            product.LastSynchronizedAt));
+            product.LastUpdatedAt));
     }
 }

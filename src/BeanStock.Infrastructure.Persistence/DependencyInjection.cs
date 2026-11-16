@@ -1,4 +1,7 @@
+using BeanStock.Application.Abstractions.Catalog;
+using BeanStock.Application.Abstractions.Concurrency;
 using BeanStock.Application.Abstractions.Persistence;
+using BeanStock.Infrastructure.Persistence.Concurrency;
 using BeanStock.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -25,6 +28,12 @@ public static class DependencyInjection
 
         services.AddDbContext<BeanStockDbContext>(options => options.UseSqlServer(connectionString));
         services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
+
+        // Scoped: the lock, the transaction and the catalog writes share the DbContext (and connection) of the scope.
+        services.AddScoped<IDistributedLock, SqlServerDistributedLock>();
+        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddScoped<ICatalogSyncStore, EfCatalogSyncStore>();
+        services.AddScoped<ICatalogSyncRunStore, EfCatalogSyncRunStore>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<BeanStockDbContext>(name: "sqlserver", tags: [HealthCheckTag]);

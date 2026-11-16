@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Planificateur du Worker : temps simulé (FakeTimeProvider), aucune base ni réseau. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BeanStock.Worker\BeanStock.Worker.csproj" />
+  </ItemGroup>
+
+</Project>

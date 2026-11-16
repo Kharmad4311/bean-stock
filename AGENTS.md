@@ -23,6 +23,9 @@ API e-commerce de démonstration (test technique) : catalogue synchronisé depui
 - Toute commande d'écriture sur un panier commence par l'incrément de `Carts.Version` dans sa transaction (verrou de ligne). Ne pas contourner ce mécanisme.
 - Les erreurs métier attendues sont retournées via `ErrorOr`, pas levées en exception. Les exceptions sont réservées à l'inattendu.
 - Toute réponse d'erreur HTTP est un ProblemDetails.
+- Les hôtes (`Api`, `Worker`) ne contiennent que des déclencheurs : ils envoient des commandes/requêtes via `ISender`, jamais d'appel direct à un repository ou au fournisseur. La synchronisation est **un seul** cas d'usage (`SynchronizeCatalogCommand`), partagé par le Worker et `POST /admin/catalog/sync`.
+- Les délais et seuils sont des options validées au démarrage (`ValidateOnStart`), jamais des constantes en dur dans un hôte. Le temps passe par `TimeProvider` (testable avec `FakeTimeProvider`).
+- Les tests n'appellent jamais DummyJSON : fournisseur simulé (`FakeCatalogProvider`, `HttpMessageHandler` de test).
 
 ## Invariants à ne jamais casser
 
@@ -33,6 +36,8 @@ API e-commerce de démonstration (test technique) : catalogue synchronisé depui
 5. Ligne modifiée depuis la version fournie → conflit explicite, jamais d'écrasement.
 6. Une ligne supprimée ne réapparaît jamais.
 7. La synchronisation est exclusive entre instances et tout-ou-rien.
+8. Une synchronisation planifiée ne s'exécute qu'une fois par intervalle, toutes instances confondues (échéance vérifiée sous le verrou distribué).
+9. Un produit n'est jamais supprimé : disparu chez le fournisseur → désactivé.
 
 Tout changement touchant ces points doit être accompagné d'un test d'intégration sur SQL Server réel.
 

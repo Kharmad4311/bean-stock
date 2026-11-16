@@ -426,3 +426,7 @@ FodyWeavers.xsd
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+
+# Résultats de tests et rapports de couverture
+TestResults/
+coverage-report/

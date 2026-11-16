@@ -1,3 +1,4 @@
+using BeanStock.Application.Common.Errors;
 using ErrorOr;
 
 namespace BeanStock.Api.Http;
@@ -36,18 +37,22 @@ internal static class ErrorOrResults
         }
 
         return TypedResults.Problem(
-            statusCode: ToStatusCode(firstError.Type),
+            statusCode: ToStatusCode(firstError),
             title: firstError.Description,
             extensions: extensions);
     }
 
-    private static int ToStatusCode(ErrorType errorType) => errorType switch
+    private static int ToStatusCode(Error error) => error.NumericType switch
     {
-        ErrorType.Validation => StatusCodes.Status400BadRequest,
-        ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
-        ErrorType.Forbidden => StatusCodes.Status403Forbidden,
-        ErrorType.NotFound => StatusCodes.Status404NotFound,
-        ErrorType.Conflict => StatusCodes.Status409Conflict,
-        _ => StatusCodes.Status500InternalServerError,
+        ApplicationErrorTypes.Upstream => StatusCodes.Status502BadGateway,
+        _ => error.Type switch
+        {
+            ErrorType.Validation => StatusCodes.Status400BadRequest,
+            ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
+            ErrorType.Forbidden => StatusCodes.Status403Forbidden,
+            ErrorType.NotFound => StatusCodes.Status404NotFound,
+            ErrorType.Conflict => StatusCodes.Status409Conflict,
+            _ => StatusCodes.Status500InternalServerError,
+        },
     };
 }

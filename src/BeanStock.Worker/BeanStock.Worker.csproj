@@ -19,4 +19,8 @@
     <ProjectReference Include="..\BeanStock.Infrastructure.Persistence\BeanStock.Infrastructure.Persistence.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="BeanStock.Worker.UnitTests" />
+  </ItemGroup>
+
 </Project>

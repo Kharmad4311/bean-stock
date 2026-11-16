@@ -109,7 +109,7 @@ namespace BeanStock.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<DateTimeOffset>("LastSynchronizedAt")
+                    b.Property<DateTimeOffset>("LastUpdatedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Name")
@@ -135,6 +135,59 @@ namespace BeanStock.Infrastructure.Persistence.Migrations
                     b.HasIndex("IsActive", "ExternalId");
 
                     b.ToTable("Products", (string)null);
+                });
+
+            modelBuilder.Entity("BeanStock.Domain.Catalog.Synchronization.CatalogSyncRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AddedCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("DeactivatedCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("ProviderProductCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReactivatedCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SkippedCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Trigger")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("UnchangedCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UpdatedCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status", "CompletedAt");
+
+                    b.ToTable("CatalogSyncRuns", (string)null);
                 });
 
             modelBuilder.Entity("BeanStock.Domain.Carts.CartLine", b =>

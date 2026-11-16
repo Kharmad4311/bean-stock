@@ -17,12 +17,12 @@ internal static class TestProducts
             stock: 10,
             availabilityStatus: "In Stock",
             providerUpdatedAt: Now,
-            synchronizedAt: Now);
+            now: Now);
 
     public static Product Inactive()
     {
         var product = Active();
-        product.Deactivate();
+        product.Deactivate(Now);
         return product;
     }
 }
