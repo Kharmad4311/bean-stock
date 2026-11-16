@@ -1,6 +1,6 @@
 # Panier personnel
 
-Ce document décrit le contrat HTTP du panier, le protocole qui garantit sa cohérence quand plusieurs requêtes ou instances agissent en même temps, et les tests qui le démontrent. Les choix et compromis sont résumés dans [`DECISIONS.md`](../DECISIONS.md) (section 5) ; le mode opératoire de test manuel est dans [`tests-manuels-panier.md`](tests-manuels-panier.md).
+Ce document décrit le contrat HTTP du panier, le protocole qui garantit sa cohérence quand plusieurs requêtes ou instances agissent en même temps, et les tests qui le démontrent. Les choix et compromis sont résumés dans [`DECISIONS.md`](../DECISIONS.md) (section 4) ; le mode opératoire de test manuel est dans [`tests-manuels-panier.md`](tests-manuels-panier.md).
 
 ## Identification de l'utilisateur
 

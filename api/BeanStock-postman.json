@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "BeanStock",
-    "description": null,
+    "description": "Export de la collection Bruno du dossier api/ (source de référence). Variables de collection : renseigner ProductId, LineId et LineVersion à partir des réponses. Voir README, section « Utilisation de l'API ».",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -295,28 +295,33 @@
   "variable": [
     {
       "key": "BaseUrl",
-      "value": "",
-      "type": "default"
+      "value": "http://localhost:5080",
+      "type": "default",
+      "description": "URL de l'API lancée en local (profil Start API)"
     },
     {
       "key": "UserId",
-      "value": "",
-      "type": "default"
+      "value": "alice",
+      "type": "default",
+      "description": "Utilisateur courant, envoyé dans l'en-tête X-User-Id"
     },
     {
       "key": "ProductId",
       "value": "",
-      "type": "default"
+      "type": "default",
+      "description": "Identifiant local d'un produit (champ id de List Products)"
     },
     {
       "key": "LineId",
       "value": "",
-      "type": "default"
+      "type": "default",
+      "description": "Identifiant d'une ligne du panier (champ lineId de Get Cart)"
     },
     {
       "key": "LineVersion",
-      "value": "",
-      "type": "default"
+      "value": "0",
+      "type": "default",
+      "description": "Version de la ligne lue dans Get Cart, à renvoyer pour la modifier ou la supprimer"
     }
   ]
 }

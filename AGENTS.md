@@ -51,7 +51,8 @@ Tout changement touchant ces points doit être accompagné d'un test d'intégrat
 
 - Tenir la documentation à jour **dans le même changement** que le code : `README.md`, `DECISIONS.md` (2 pages max), `documentation/`.
 - Documenter ce qui aide à comprendre ou à exploiter — pas de paraphrase du code.
-- Tout endpoint ajouté ou modifié est reflété dans la collection Bruno (`api/`, format YAML OpenCollection), dans le même changement.
+- Tout endpoint ajouté ou modifié est reflété dans la collection Bruno (`api/`, format YAML OpenCollection), dans le même changement. La collection Bruno est la source : `api/BeanStock-postman.json` en est un export (Bruno → *Share* → *Export* → Postman), à régénérer quand les requêtes changent, en gardant les valeurs par défaut non sensibles de ses variables.
+- Tout changement de comportement observable est reflété dans le mode opératoire de test manuel concerné (`documentation/tests-manuels-*.md`).
 - Les environnements Bruno (`api/environments/`) ne contiennent que des valeurs non sensibles (URL locales…) ; jamais de jeton ni de mot de passe.
 - Le démarrage local doit rester possible avec le conteneur SQL Server fourni **ou** une instance SQL Server installée ; Docker n'est obligatoire que pour les tests d'intégration (Testcontainers).
 - Les fichiers de configuration et de documentation à la racine sont référencés dans le dossier de solution `/items` du `.slnx` (sous-dossiers `docker`, `documentation`).

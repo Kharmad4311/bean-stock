@@ -5,7 +5,7 @@ Mode opératoire pour vérifier à la main les règles du panier et ses garantie
 **Outils**
 - **PowerShell 7** (`pwsh`) et le script [`scripts/panier.ps1`](scripts/panier.ps1), qui fournit des fonctions d'appel et affiche chaque réponse de façon lisible (statut, lignes et versions, ou code d'erreur). Windows PowerShell 5.1 ne suffit pas : les scénarios parallèles utilisent `ForEach-Object -Parallel`.
 - **SSMS** (base `BeanStock`) pour le SQL, et surtout pour **tenir le verrou d'un panier** à la place d'une autre requête : c'est ce qui rend les scénarios de concurrence reproductibles à la main.
-- Bruno (dossier `Cart`) convient pour les scénarios séquentiels 1 à 8 ; l'utilisateur est la variable `UserId` de l'environnement.
+- Bruno ou Postman (dossier `Cart`) conviennent pour les scénarios séquentiels 1 à 8 ; l'utilisateur est la variable `UserId`.
 
 ## 0. Préparation
 
