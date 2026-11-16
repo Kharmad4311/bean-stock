@@ -1,0 +1,18 @@
+# Pipeline de pull request : build, tests et couverture uniquement.
+# Contrôle à rendre obligatoire dans le ruleset de main.
+name: PR
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+# Une nouvelle poussée sur la PR annule l'exécution précédente.
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    uses: ./.github/workflows/build-test.yml

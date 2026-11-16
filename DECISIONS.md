@@ -1,6 +1,6 @@
 # DECISIONS — BeanStock
 
-> Limite : 2 pages. Le détail vit dans `documentation/`. Les points marqués **[À TRANCHER]** sont encore ouverts.
+> Limite : 2 pages. Le détail vit dans `documentation/`.
 
 ## 1. Contexte
 
@@ -61,4 +61,8 @@ Handler d'authentification lisant l'en-tête `X-User-Id` et produisant un `Claim
 
 - Pas d'authentification réelle ; endpoint de synchronisation manuelle non protégé.
 - Synchronisation en mémoire et en transaction unique, adaptée jusqu'à quelques centaines de milliers de produits ; au-delà, staging en flux et fusion ensembliste.
-- **[À TRANCHER]** Images Docker de livraison, moteur CI (fichiers YAML dans `pipelines/`).
+
+## 8. Livraison
+
+- **Images** : un Dockerfile par hôte, non-root. Les migrations passent par un **bundle EF Core** (conteneur `migrator`) exécuté une fois avant l'API et les Workers : aucune instance ne modifie le schéma. `compose.yaml` lance SQL Server seul ou, avec le profil `app`, toute la pile et deux Workers.
+- **CI GitHub Actions** (là où vit le dépôt, visible sur chaque PR) : build, tests Testcontainers et couverture sur chaque PR ; images en plus sur `main`. *Écarté :* Azure Pipelines, invisible pour les relecteurs. Ni registre ni déploiement : hors périmètre ; compte `sa` en local.

@@ -1,5 +1,7 @@
 # BeanStock
 
+[![CI](https://github.com/Kharmad4311/bean-stock/actions/workflows/ci.yml/badge.svg)](https://github.com/Kharmad4311/bean-stock/actions/workflows/ci.yml)
+
 API e-commerce de démonstration : un **catalogue de produits** synchronisé depuis un fournisseur externe et un **panier personnel** par utilisateur, conçue pour fonctionner de façon cohérente avec **plusieurs instances** en parallèle.
 
 > Projet réalisé dans le cadre d'un test technique. Les contributions externes ne sont pas acceptées.
@@ -8,7 +10,7 @@ BeanStock est le nom de marque du service. Le catalogue provient de [DummyJSON](
 
 ## Statut
 
-Fonctionnel en local : base SQL Server, API (santé, catalogue paginé, synchronisation manuelle, panier) et Worker (synchronisation automatique), couverts par des tests unitaires et d'intégration. Restent à livrer : les images Docker de l'API et du Worker, et la pipeline CI (marquées *(à venir)*).
+Première version complète : base SQL Server, API (santé, catalogue paginé, synchronisation manuelle, panier) et Worker (synchronisation automatique), couverts par des tests unitaires et d'intégration. L'ensemble démarre depuis Visual Studio ou entièrement en conteneurs, et une CI GitHub Actions vérifie chaque pull request (build, tests, couverture) ainsi que `main` (avec en plus les images Docker).
 
 ## Fonctionnalités
 
@@ -38,6 +40,7 @@ Les raisons de ces choix, leurs compromis et leurs limites sont détaillés dans
 | [`documentation/verrou-distribue.md`](documentation/verrou-distribue.md) | Fiche sur `sp_getapplock`, le verrou de la synchronisation, avec sources |
 | [`documentation/tests-manuels-panier.md`](documentation/tests-manuels-panier.md) | Mode opératoire de test manuel du panier, y compris sur deux instances |
 | [`documentation/tests-manuels-synchronisation.md`](documentation/tests-manuels-synchronisation.md) | Mode opératoire de test manuel de la synchronisation |
+| [`documentation/bilan-ia.md`](documentation/bilan-ia.md) | Bilan de l'usage de l'IA : outil, vérifications, exemples de propositions validée, adaptée, rejetée |
 | [`AGENTS.md`](AGENTS.md) | Instructions fournies aux agents IA qui travaillent sur le dépôt |
 
 ## Structure du dépôt
@@ -47,8 +50,8 @@ src/             Code source (Domain, Application, Infrastructure, Api, Worker)
 tests/           Tests unitaires et d'intégration
 api/             Collection Bruno (source) et son export Postman
 documentation/   Documentation détaillée et scripts de test manuel
-pipelines/       Pipelines CI en YAML (à venir)
-compose.yaml     Dépendances locales (SQL Server)
+.github/         CI GitHub Actions : pipeline de PR et pipeline de main
+compose.yaml     SQL Server seul, ou toute la pile avec le profil app
 DECISIONS.md     Décisions d'architecture et compromis
 AGENTS.md        Instructions fournies aux agents IA utilisés sur le projet
 ```
@@ -57,7 +60,7 @@ AGENTS.md        Instructions fournies aux agents IA utilisés sur le projet
 
 - [SDK .NET 10](https://dotnet.microsoft.com/download/dotnet/10.0) (version fixée par `global.json`)
 - **SQL Server** : au choix, le conteneur fourni (Docker) ou une instance installée localement (Developer, Express…)
-- [Docker](https://www.docker.com/) pour les tests d'intégration (Testcontainers) et, si on le souhaite, pour SQL Server en local
+- [Docker](https://www.docker.com/) pour les tests d'intégration (Testcontainers) et, si on le souhaite, pour SQL Server ou toute l'application en local
 - Windows 11 : **Smart App Control désactivé** (Sécurité Windows → Contrôle des applications et du navigateur). Il bloque les assemblies non signées produites par chaque build, y compris lorsqu'elles sont chargées par `dotnet ef` ; aucune exclusion par dossier n'existe.
 - [Bruno](https://www.usebruno.com/) ou Postman (facultatif) pour appeler l'API avec la collection fournie
 - PowerShell 7 (facultatif) pour les scripts des tests manuels du panier
@@ -107,6 +110,25 @@ En environnement `Development`, l'API applique les migrations EF Core au démarr
 | `GET /health/ready` | L'instance peut servir des requêtes (base joignable) |
 | `GET /openapi/v1.json` | Contrat OpenAPI (Development) |
 
+### Tout en conteneurs (sans SDK .NET)
+
+```bash
+cp .env.example .env                          # puis renseigner MSSQL_SA_PASSWORD
+docker compose --profile app up -d --build    # SQL Server, migrations, API, 2 Workers
+docker compose --profile app logs -f worker   # une seule synchronisation par période
+```
+
+| Service | Rôle |
+|---|---|
+| `sqlserver` | Base de données (volume nommé `sqlserver-data`) |
+| `migrator` | Bundle EF Core : applique les migrations une fois, puis s'arrête |
+| `api` | API sur http://localhost:5080 (`API_HOST_PORT`), documentation sur `/scalar` |
+| `worker` | Deux instances : le verrou distribué n'en laisse synchroniser qu'une |
+
+L'API et les Workers ne démarrent qu'après la réussite du `migrator` ; dans les conteneurs, l'API n'applique pas les migrations elle-même. Pour lancer en parallèle l'API depuis Visual Studio, changer `API_HOST_PORT`. Arrêt : `docker compose --profile app down` (ajouter `-v` pour supprimer les données).
+
+Les images se construisent aussi séparément, depuis la racine : `docker build -f src/BeanStock.Api/Dockerfile .` (API, ou `--target migrator`) et `docker build -f src/BeanStock.Worker/Dockerfile .`.
+
 ### Migrations
 
 Les outils sont déclarés dans `.config/dotnet-tools.json` :
@@ -131,6 +153,15 @@ dotnet test
 | `BeanStock.IntegrationTests` | API + SQL Server réel : règles du panier, concurrence sur deux instances, rollback, verrou distribué | **Docker** (Testcontainers) |
 
 Aucun test n'appelle le vrai DummyJSON. Pour lancer uniquement les tests sans Docker : `dotnet test --filter "FullyQualifiedName!~IntegrationTests"`.
+
+La CI GitHub Actions rejoue ces commandes sur une machine neutre :
+
+| Workflow | Déclencheur | Contenu |
+|---|---|---|
+| [`pr.yml`](.github/workflows/pr.yml) | Chaque pull request | Build en Release (avertissements bloquants), tous les tests, couverture |
+| [`ci.yml`](.github/workflows/ci.yml) | Poussée sur `main`, ou manuel | Idem, puis construction des trois images Docker (`api`, `migrator`, `worker`) sans publication |
+
+Les étapes communes sont définies une seule fois dans [`build-test.yml`](.github/workflows/build-test.yml), un workflow réutilisable. Le résumé de couverture s'affiche dans chaque exécution et le rapport HTML est téléchargeable en artefact.
 
 ### Couverture de code
 
@@ -266,4 +297,4 @@ Chaque opération réussie renvoie le panier complet avec ses nouvelles versions
 
 ## Usage de l'IA
 
-Ce projet est développé avec l'assistance d'outils d'IA. Les instructions qui encadrent les agents sont versionnées dans [`AGENTS.md`](AGENTS.md). Le bilan d'utilisation (outils, vérifications, exemples de propositions retenues, adaptées ou rejetées) *(à venir)* sera dans `documentation/`.
+Ce projet a été développé avec Claude (Anthropic). Les instructions qui encadrent l'agent sont versionnées dans [`AGENTS.md`](AGENTS.md) ; aucun serveur MCP, skill ni hook n'a été utilisé. Le bilan (outil, façon de travailler, vérifications, exemples de propositions validée, adaptée et rejetée, instructions du Projet Claude) est dans [`documentation/bilan-ia.md`](documentation/bilan-ia.md).

@@ -1,0 +1,14 @@
+# Contexte de build Docker : uniquement ce qu'il faut pour compiler les hôtes.
+**/bin/
+**/obj/
+**/.vs/
+**/*.user
+.git/
+.github/
+.env
+TestResults/
+coverage-report/
+api/
+documentation/
+tests/
+*.md

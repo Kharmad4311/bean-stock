@@ -1,0 +1,58 @@
+# Workflow réutilisable : build, tests (y compris SQL Server réel via Testcontainers)
+# et couverture de code. Appelé par pr.yml et ci.yml, il ne se déclenche jamais seul.
+name: Build et tests
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build-test:
+    name: Build et tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Installer le SDK .NET (version de global.json)
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Restaurer les outils et les paquets
+        run: |
+          dotnet tool restore
+          dotnet restore
+
+      # TreatWarningsAsErrors (Directory.Build.props) : un avertissement fait échouer le build.
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      # Docker est disponible sur les runners Linux : les tests d'intégration
+      # démarrent leur SQL Server avec Testcontainers.
+      - name: Tests et couverture
+        run: >
+          dotnet test --no-build --configuration Release
+          --coverage --coverage-output-format cobertura --coverage-settings coverage.config
+          --results-directory TestResults/coverage
+
+      - name: Rapport de couverture
+        if: ${{ !cancelled() }}
+        run: |
+          dotnet reportgenerator -reports:"TestResults/coverage/*.cobertura.xml" -targetdir:coverage-report \
+            -reporttypes:"Html;MarkdownSummaryGithub" -filefilters:"-*.g.cs"
+          cat coverage-report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publier le rapport de couverture
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: coverage-report
+          path: coverage-report/
+          retention-days: 14
